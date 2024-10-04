@@ -12,7 +12,7 @@ namespace MakerJs.models {
          */
         constructor(x: number, y: number, diameter: number, scale: number = 1) {
             const radius = (diameter / 2) * scale;
-            this.paths["customDot"] = new MakerJs.paths.Circle([x * scale, y * scale], radius);
+            this.paths["customDot"] = new paths.Circle([x * scale, y * scale], radius);
         }
     }
 

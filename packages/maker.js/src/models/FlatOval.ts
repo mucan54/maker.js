@@ -5,7 +5,7 @@ namespace MakerJs.models {
         public paths: IPathMap = {};
 
         constructor(width: number, radius: number) {
-            this.paths = new MakerJs.models.Belt(width, width / 2, radius).paths;
+            this.paths = new models.Belt(width, width / 2, radius).paths;
         }
     }
 

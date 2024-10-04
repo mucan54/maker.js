@@ -6,8 +6,8 @@ namespace MakerJs.models {
 
         constructor(diameter: number) {
             this.paths = {
-                base: new MakerJs.paths.Line([0, 0], [diameter, 0]),
-                arc: new MakerJs.paths.Arc([diameter / 2, 0], diameter / 2, 0, 180)
+                base: new paths.Line([0, 0], [diameter, 0]),
+                arc: new paths.Arc([diameter / 2, 0], diameter / 2, 0, 180)
             };
         }
     }

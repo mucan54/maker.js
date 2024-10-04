@@ -4,16 +4,15 @@ namespace MakerJs.models {
         public paths: IPathMap = {};
 
         constructor(rectWidth: number, rectHeight: number, dotDistance: number, scale: number) {
-            const makerjs = require('makerjs');
             const scaledWidth = rectWidth * scale;
             const scaledHeight = rectHeight * scale;
             const scaledDotDistance = dotDistance * scale;
 
             // Add dots to each corner
-            this.paths["topLeft"] = new makerjs.paths.Circle([scaledDotDistance, scaledDotDistance], (1.4 / 2) * scale);
-            this.paths["topRight"] = new makerjs.paths.Circle([scaledWidth - scaledDotDistance, scaledDotDistance], (1.4 / 2) * scale);
-            this.paths["bottomLeft"] = new makerjs.paths.Circle([scaledDotDistance, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
-            this.paths["bottomRight"] = new makerjs.paths.Circle([scaledWidth - scaledDotDistance, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
+            this.paths["topLeft"] = new paths.Circle([scaledDotDistance, scaledDotDistance], (1.4 / 2) * scale);
+            this.paths["topRight"] = new paths.Circle([scaledWidth - scaledDotDistance, scaledDotDistance], (1.4 / 2) * scale);
+            this.paths["bottomLeft"] = new paths.Circle([scaledDotDistance, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
+            this.paths["bottomRight"] = new paths.Circle([scaledWidth - scaledDotDistance, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
         }
     }
 

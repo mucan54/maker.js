@@ -5,7 +5,7 @@ namespace MakerJs.models {
         public paths: IPathMap = {};
 
         constructor(sideLength: number) {
-            this.paths = new MakerJs.models.Polygon(6, sideLength).paths;
+            this.paths = new models.Polygon(6, sideLength).paths;
         }
     }
 

@@ -6,9 +6,9 @@ namespace MakerJs.models {
 
         constructor(radius: number) {
             this.paths = {
-                base: new MakerJs.paths.Line([0, 0], [radius, 0]),
-                height: new MakerJs.paths.Line([0, 0], [0, radius]),
-                arc: new MakerJs.paths.Arc([0, 0], radius, 0, 90)
+                base: new paths.Line([0, 0], [radius, 0]),
+                height: new paths.Line([0, 0], [0, radius]),
+                arc: new paths.Arc([0, 0], radius, 0, 90)
             };
         }
     }

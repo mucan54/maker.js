@@ -5,7 +5,7 @@ namespace MakerJs.models {
         public paths: IPathMap = {};
 
         constructor(stemLength: number, stemWidth: number, headLength: number, headWidth: number) {
-            this.paths = new MakerJs.models.ConnectTheDots(true, [
+            this.paths = new models.ConnectTheDots(true, [
                 [0, 0],
                 [stemLength, 0],
                 [stemLength, stemWidth / 2 - headWidth / 2],

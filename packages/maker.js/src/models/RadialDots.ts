@@ -4,14 +4,14 @@ namespace MakerJs.models {
         public paths: IPathMap = {};
 
         constructor(circleDiameter: number, radialDots: number, dotDistance: number, scale: number) {
-            const makerjs = require('makerjs');
+            
             const radius = (circleDiameter / 2) * scale;
 
             for (let i = 0; i < 360; i += (360 / radialDots)) {
                 const angle = i * (Math.PI / 180);
                 const x = radius * Math.cos(angle);
                 const y = radius * Math.sin(angle);
-                this.paths[`dot_${i}`] = new makerjs.paths.Circle([x, y], (dotDistance / 2) * scale);
+                this.paths[`dot_${i}`] = new paths.Circle([x, y], (dotDistance / 2) * scale);
             }
         }
     }

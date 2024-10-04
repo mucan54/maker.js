@@ -7,8 +7,8 @@ namespace MakerJs.models {
         public models: IModelMap = {};
 
         constructor(width: number, height: number) {
-            const upperArc = new MakerJs.models.EllipticArc(0, 180, width / 2, height / 3);
-            const lowerArc = new MakerJs.models.EllipticArc(0, 180, width / 2, height / 2);
+            const upperArc = new models.EllipticArc(0, 180, width / 2, height / 3);
+            const lowerArc = new models.EllipticArc(0, 180, width / 2, height / 2);
             this.models = {
                 arcTop: upperArc,
                 arcBottom: MakerJs.model.rotate(lowerArc, -180)

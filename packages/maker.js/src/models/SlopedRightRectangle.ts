@@ -6,10 +6,10 @@ namespace MakerJs.models {
 
         constructor(widthTop: number, widthBottom: number, height: number) {
             this.paths = {
-                widthTop: new MakerJs.paths.Line([0, height], [widthTop, height]),
-                diagonal: new MakerJs.paths.Line([widthTop, height], [widthBottom, 0]),
-                widthBottom: new MakerJs.paths.Line([widthBottom, 0], [0, 0]),
-                height: new MakerJs.paths.Line([0, 0], [0, height])
+                widthTop: new paths.Line([0, height], [widthTop, height]),
+                diagonal: new paths.Line([widthTop, height], [widthBottom, 0]),
+                widthBottom: new paths.Line([widthBottom, 0], [0, 0]),
+                height: new paths.Line([0, 0], [0, height])
             };
         }
     }

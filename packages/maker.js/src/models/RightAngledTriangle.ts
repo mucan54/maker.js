@@ -6,9 +6,9 @@ namespace MakerJs.models {
 
         constructor(base: number, height: number) {
             this.paths = {
-                a: new MakerJs.paths.Line([0, 0], [base, 0]),
-                b: new MakerJs.paths.Line([base, 0], [base, height]),
-                c: new MakerJs.paths.Line([base, height], [0, 0])
+                a: new paths.Line([0, 0], [base, 0]),
+                b: new paths.Line([base, 0], [base, height]),
+                c: new paths.Line([base, height], [0, 0])
             };
         }
     }

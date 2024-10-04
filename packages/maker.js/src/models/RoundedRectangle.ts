@@ -5,7 +5,7 @@ namespace MakerJs.models {
         public paths: IPathMap = {};
 
         constructor(length: number, width: number, radius: number) {
-            this.paths = new MakerJs.models.RoundRectangle(length, width, radius).paths;
+            this.paths = new models.RoundRectangle(length, width, radius).paths;
         }
     }
 
