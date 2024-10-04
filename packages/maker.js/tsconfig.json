@@ -90,6 +90,6 @@
     "src/models/RadialDots.ts",
     "src/models/CornerDots.ts",
     "src/models/EdgeDots.ts",
-    "src/models/CustomDot.ts",
+    "src/models/CustomDot.ts"
   ]
 }
