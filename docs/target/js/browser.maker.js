@@ -8797,6 +8797,94 @@ var MakerJs;
 })(MakerJs || (MakerJs = {}));
 var MakerJs;
 (function (MakerJs) {
+    var manager;
+    (function (manager) {
+        var allAvailableShapes = [
+            "Rectangle",
+            "Circle",
+            "RightAngledTriangle",
+            "RightAngledTriangleMirrored",
+            "ArchedRectangle",
+            "RoundedRectangle",
+            "Egg",
+            "Ellipse",
+            "FlatOval",
+            "IsoscelesTriangle",
+            "Arrow",
+            "HalfCircle",
+            "QuarterCircle",
+            "Hexagon",
+            "Polygon",
+            "Octagon",
+            "Star",
+            "SlopedRectangle",
+            "SlopedRightRectangle",
+            "Trapezoid",
+            "Heart",
+            "Kite",
+            "GridDots",
+            "RadialDots",
+            "CornerDots",
+            "EdgeDots",
+            "CustomDot"
+        ];
+        function getAllModels() {
+            var shapeNames = allAvailableShapes;
+            var shapes = {};
+            shapeNames.forEach(function (shapeName) {
+                var _a;
+                // Convert shape name from CamelCase to spaced format
+                var formattedName = shapeName.replace(/([a-z])([A-Z])/g, '$1 $2');
+                shapes[shapeName] = {
+                    code: shapeName,
+                    name: formattedName,
+                    parameters: ((_a = MakerJs.models[shapeName]) === null || _a === void 0 ? void 0 : _a.metaParameters) || {} // Use optional chaining
+                };
+            });
+            return shapes;
+        }
+        manager.getAllModels = getAllModels;
+        function getModel(name, parameters) {
+            var _a;
+            var models = getAllModels();
+            var modelDefinition = null;
+            name = name.replace(/ /g, '');
+            if (models.indexOf(name) > -1) {
+                modelDefinition = (_a = MakerJs.models)[name].apply(_a, parameters);
+            }
+            if (!modelDefinition) {
+                console.error("Model ".concat(name, " not found."));
+                return null;
+            }
+            return modelDefinition;
+        }
+        manager.getModel = getModel;
+        function getAllShapes() {
+            var allShapes = getAllModels();
+            var shapesWithoutDot = [];
+            for (var shapeName in allShapes) {
+                if (allShapes.hasOwnProperty(shapeName) && !shapeName.includes("Dot")) {
+                    shapesWithoutDot.push(allShapes[shapeName]);
+                }
+            }
+            return shapesWithoutDot;
+        }
+        manager.getAllShapes = getAllShapes;
+        function getAllDots() {
+            var allShapes = getAllModels();
+            var shapesWithDot = [];
+            for (var shapeName in allShapes) {
+                if (allShapes.hasOwnProperty(shapeName) && shapeName.includes("Dot")) {
+                    shapesWithDot.push(allShapes[shapeName]);
+                }
+            }
+            return shapesWithDot;
+        }
+        manager.getAllDots = getAllDots;
+    })(manager = MakerJs.manager || (MakerJs.manager = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
     var models;
     (function (models) {
         /**
@@ -10300,6 +10388,564 @@ var MakerJs;
             { title: "font size", type: "range", min: 10, max: 200, value: 72 },
             { title: "combine", type: "bool", value: false },
             { title: "center character origin", type: "bool", value: false }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var Circle = /** @class */ (function () {
+            function Circle(options) {
+                this.paths = {};
+                this.annotations = {}; // Assuming annotations will be an object, update based on your usage.
+                var diameter = options.diameter || 80; // Default to 80 if diameter is not provided
+                var canvasWidth = options.canvasWidth;
+                var canvasHeight = options.canvasHeight;
+                // Create the circle path
+                this.paths["circle"] = new MakerJs.paths.Circle([0, 0], diameter / 2);
+                // Calculate the object's width and height
+                var objectWidth = diameter;
+                var objectHeight = diameter;
+                // Translate the object to the center of the canvas
+                var translateX = (canvasWidth - objectWidth) / 2;
+                var translateY = (canvasHeight - objectHeight) / 2;
+                // Generate annotations (assuming generateAnnotationsForCircle is a method you implement elsewhere)
+                this.annotations = this.generateAnnotationsForCircle(translateX, translateY, objectWidth);
+                // Move the circle to the new position on the canvas
+                MakerJs.model.move(this, [translateX, translateY]);
+            }
+            // Assuming this is a method you implement that generates annotations for the circle
+            Circle.prototype.generateAnnotationsForCircle = function (x, y, diameter) {
+                // Add logic for generating annotations based on x, y, and diameter
+                return {
+                    centerX: x + diameter / 2,
+                    centerY: y + diameter / 2,
+                    diameter: diameter
+                };
+            };
+            return Circle;
+        }());
+        models.Circle = Circle;
+        Circle.metaParameters = [
+            { title: "Diameter", type: "range", min: 1, max: 100, value: 80 },
+            { title: "Canvas Width", type: "range", min: 100, max: 1000, value: 500 },
+            { title: "Canvas Height", type: "range", min: 100, max: 1000, value: 500 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var RightAngledTriangle = /** @class */ (function () {
+            function RightAngledTriangle(base, height) {
+                this.paths = {};
+                this.paths = {
+                    a: new MakerJs.paths.Line([0, 0], [base, 0]),
+                    b: new MakerJs.paths.Line([base, 0], [base, height]),
+                    c: new MakerJs.paths.Line([base, height], [0, 0])
+                };
+            }
+            return RightAngledTriangle;
+        }());
+        models.RightAngledTriangle = RightAngledTriangle;
+        RightAngledTriangle.metaParameters = [
+            { title: "Base", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var RightAngledTriangleMirrored = /** @class */ (function () {
+            function RightAngledTriangleMirrored(base, height) {
+                this.paths = {};
+                this.paths = {
+                    a: new MakerJs.paths.Line([0, 0], [base, 0]),
+                    b: new MakerJs.paths.Line([base, 0], [0, height]),
+                    c: new MakerJs.paths.Line([0, height], [0, 0])
+                };
+            }
+            return RightAngledTriangleMirrored;
+        }());
+        models.RightAngledTriangleMirrored = RightAngledTriangleMirrored;
+        RightAngledTriangleMirrored.metaParameters = [
+            { title: "Base", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var ArchedRectangle = /** @class */ (function () {
+            function ArchedRectangle(width, height) {
+                this.paths = {};
+                this.paths = {
+                    bottom: new MakerJs.paths.Line([0, 0], [width, 0]),
+                    left: new MakerJs.paths.Line([0, 0], [0, height - width / 2]),
+                    right: new MakerJs.paths.Line([width, 0], [width, height - width / 2]),
+                    arc: new MakerJs.paths.Arc([width / 2, height - width / 2], width / 2, 0, 180)
+                };
+            }
+            return ArchedRectangle;
+        }());
+        models.ArchedRectangle = ArchedRectangle;
+        ArchedRectangle.metaParameters = [
+            { title: "Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var RoundedRectangle = /** @class */ (function () {
+            function RoundedRectangle(length, width, radius) {
+                this.paths = {};
+                this.paths = new models.RoundRectangle(length, width, radius).paths;
+            }
+            return RoundedRectangle;
+        }());
+        models.RoundedRectangle = RoundedRectangle;
+        RoundedRectangle.metaParameters = [
+            { title: "Length", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Radius", type: "range", min: 1, max: 20, value: 10 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var Egg = /** @class */ (function () {
+            function Egg(width, height) {
+                this.paths = {};
+                this.models = {};
+                var upperArc = new models.EllipticArc(0, 180, width / 2, height / 3);
+                var lowerArc = new models.EllipticArc(0, 180, width / 2, height / 2);
+                this.models = {
+                    arcTop: upperArc,
+                    arcBottom: MakerJs.model.rotate(lowerArc, -180)
+                };
+            }
+            return Egg;
+        }());
+        models.Egg = Egg;
+        Egg.metaParameters = [
+            { title: "Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var FlatOval = /** @class */ (function () {
+            function FlatOval(width, radius) {
+                this.paths = {};
+                this.paths = new models.Belt(width, width / 2, radius).paths;
+            }
+            return FlatOval;
+        }());
+        models.FlatOval = FlatOval;
+        FlatOval.metaParameters = [
+            { title: "Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Radius", type: "range", min: 1, max: 20, value: 10 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var IsoscelesTriangle = /** @class */ (function () {
+            function IsoscelesTriangle(base, height) {
+                this.paths = {};
+                this.paths = {
+                    a: new MakerJs.paths.Line([0, 0], [base, 0]),
+                    b: new MakerJs.paths.Line([base, 0], [base / 2, height]),
+                    c: new MakerJs.paths.Line([base / 2, height], [0, 0])
+                };
+            }
+            return IsoscelesTriangle;
+        }());
+        models.IsoscelesTriangle = IsoscelesTriangle;
+        IsoscelesTriangle.metaParameters = [
+            { title: "Base", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var Arrow = /** @class */ (function () {
+            function Arrow(stemLength, stemWidth, headLength, headWidth) {
+                this.paths = {};
+                this.paths = new models.ConnectTheDots(true, [
+                    [0, 0],
+                    [stemLength, 0],
+                    [stemLength, stemWidth / 2 - headWidth / 2],
+                    [stemLength + headLength, stemWidth / 2],
+                    [stemLength, stemWidth / 2 + headWidth / 2],
+                    [stemLength, stemWidth],
+                    [0, stemWidth]
+                ]).paths;
+            }
+            return Arrow;
+        }());
+        models.Arrow = Arrow;
+        Arrow.metaParameters = [
+            { title: "Stem Length", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Stem Width", type: "range", min: 1, max: 100, value: 20 },
+            { title: "Head Length", type: "range", min: 1, max: 100, value: 30 },
+            { title: "Head Width", type: "range", min: 1, max: 100, value: 40 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var HalfCircle = /** @class */ (function () {
+            function HalfCircle(diameter) {
+                this.paths = {};
+                this.paths = {
+                    base: new MakerJs.paths.Line([0, 0], [diameter, 0]),
+                    arc: new MakerJs.paths.Arc([diameter / 2, 0], diameter / 2, 0, 180)
+                };
+            }
+            return HalfCircle;
+        }());
+        models.HalfCircle = HalfCircle;
+        HalfCircle.metaParameters = [
+            { title: "Diameter", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var QuarterCircle = /** @class */ (function () {
+            function QuarterCircle(radius) {
+                this.paths = {};
+                this.paths = {
+                    base: new MakerJs.paths.Line([0, 0], [radius, 0]),
+                    height: new MakerJs.paths.Line([0, 0], [0, radius]),
+                    arc: new MakerJs.paths.Arc([0, 0], radius, 0, 90)
+                };
+            }
+            return QuarterCircle;
+        }());
+        models.QuarterCircle = QuarterCircle;
+        QuarterCircle.metaParameters = [
+            { title: "Radius", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var Hexagon = /** @class */ (function () {
+            function Hexagon(sideLength) {
+                this.paths = {};
+                this.paths = new models.Polygon(6, sideLength).paths;
+            }
+            return Hexagon;
+        }());
+        models.Hexagon = Hexagon;
+        Hexagon.metaParameters = [
+            { title: "Side Length", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var Octagon = /** @class */ (function () {
+            function Octagon(sideLength) {
+                this.paths = {};
+                this.paths = new models.Polygon(8, sideLength).paths;
+            }
+            return Octagon;
+        }());
+        models.Octagon = Octagon;
+        Octagon.metaParameters = [
+            { title: "Side Length", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var SlopedRectangle = /** @class */ (function () {
+            function SlopedRectangle(width, heightLeft, heightRight) {
+                this.paths = {};
+                this.paths = {
+                    width: new MakerJs.paths.Line([0, 0], [width, 0]),
+                    rightHeight: new MakerJs.paths.Line([width, 0], [width, heightRight]),
+                    diagonal: new MakerJs.paths.Line([width, heightRight], [0, heightLeft]),
+                    leftHeight: new MakerJs.paths.Line([0, heightLeft], [0, 0])
+                };
+            }
+            return SlopedRectangle;
+        }());
+        models.SlopedRectangle = SlopedRectangle;
+        SlopedRectangle.metaParameters = [
+            { title: "Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height Left", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height Right", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var SlopedRightRectangle = /** @class */ (function () {
+            function SlopedRightRectangle(widthTop, widthBottom, height) {
+                this.paths = {};
+                this.paths = {
+                    widthTop: new MakerJs.paths.Line([0, height], [widthTop, height]),
+                    diagonal: new MakerJs.paths.Line([widthTop, height], [widthBottom, 0]),
+                    widthBottom: new MakerJs.paths.Line([widthBottom, 0], [0, 0]),
+                    height: new MakerJs.paths.Line([0, 0], [0, height])
+                };
+            }
+            return SlopedRightRectangle;
+        }());
+        models.SlopedRightRectangle = SlopedRightRectangle;
+        SlopedRightRectangle.metaParameters = [
+            { title: "Width Top", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Width Bottom", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var Trapezoid = /** @class */ (function () {
+            function Trapezoid(widthBottom, widthTop, height) {
+                this.paths = {};
+                this.paths = {
+                    widthBottom: new MakerJs.paths.Line([0, 0], [widthBottom, 0]),
+                    rightSide: new MakerJs.paths.Line([widthBottom, 0], [widthTop, height]),
+                    widthTop: new MakerJs.paths.Line([widthTop, height], [0, height]),
+                    leftSide: new MakerJs.paths.Line([0, height], [0, 0])
+                };
+            }
+            return Trapezoid;
+        }());
+        models.Trapezoid = Trapezoid;
+        Trapezoid.metaParameters = [
+            { title: "Width Bottom", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Width Top", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var Heart = /** @class */ (function () {
+            function Heart(r, a2) {
+                this.paths = {};
+                var a = a2 / 2;
+                var a_radians = MakerJs.angle.toRadians(a);
+                var x = Math.cos(a_radians) * r;
+                var y = Math.sin(a_radians) * r;
+                var z = MakerJs.solvers.solveTriangleASA(90, 2 * r, 90 - a);
+                this.paths.arc1 = new MakerJs.paths.Arc([x, 0], r, -a, 180 - a);
+                this.paths.line1 = new MakerJs.paths.Line([x * 2, -y], [0, -z + y]);
+                this.paths.arc2 = MakerJs.path.mirror(this.paths.arc1, true, false);
+                this.paths.line2 = MakerJs.path.mirror(this.paths.line1, true, false);
+            }
+            return Heart;
+        }());
+        models.Heart = Heart;
+        Heart.metaParameters = [
+            { title: "Radius", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Angle", type: "range", min: 1, max: 180, value: 45 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var Kite = /** @class */ (function () {
+            function Kite(width, heightTop, heightBottom) {
+                this.paths = {};
+                this.paths = {
+                    topLeft: new MakerJs.paths.Line([-width / 2, 0], [0, heightTop]),
+                    topRight: new MakerJs.paths.Line([width / 2, 0], [0, heightTop]),
+                    bottomLeft: new MakerJs.paths.Line([-width / 2, 0], [0, -heightBottom]),
+                    bottomRight: new MakerJs.paths.Line([width / 2, 0], [0, -heightBottom])
+                };
+            }
+            return Kite;
+        }());
+        models.Kite = Kite;
+        Kite.metaParameters = [
+            { title: "Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height Top", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Height Bottom", type: "range", min: 1, max: 100, value: 50 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var GridDots = /** @class */ (function () {
+            function GridDots(rectWidth, rectHeight, gridHorizontal, gridVertical, dotDistance, scale) {
+                this.paths = {};
+                var scaledDotDistance = dotDistance * scale;
+                var scaledWidth = rectWidth * scale;
+                var scaledHeight = rectHeight * scale;
+                for (var i = 0; i < gridHorizontal; i++) {
+                    for (var j = 0; j < gridVertical; j++) {
+                        var x = scaledDotDistance + i * ((scaledWidth - 2 * scaledDotDistance) / (gridHorizontal - 1));
+                        var y = scaledDotDistance + j * ((scaledHeight - 2 * scaledDotDistance) / (gridVertical - 1));
+                        this.paths["dot_".concat(i, "_").concat(j)] = new MakerJs.paths.Circle([x, y], (1.4 / 2) * scale); // 1.4 is the borehole diameter
+                    }
+                }
+            }
+            return GridDots;
+        }());
+        models.GridDots = GridDots;
+        GridDots.metaParameters = [
+            { title: "Rectangle Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Rectangle Height", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Grid Horizontal", type: "range", min: 1, max: 10, value: 5 },
+            { title: "Grid Vertical", type: "range", min: 1, max: 10, value: 5 },
+            { title: "Dot Distance", type: "range", min: 1, max: 20, value: 3.2 },
+            { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var RadialDots = /** @class */ (function () {
+            function RadialDots(circleDiameter, radialDots, dotDistance, scale) {
+                this.paths = {};
+                var radius = (circleDiameter / 2) * scale;
+                for (var i = 0; i < 360; i += (360 / radialDots)) {
+                    var angle_1 = i * (Math.PI / 180);
+                    var x = radius * Math.cos(angle_1);
+                    var y = radius * Math.sin(angle_1);
+                    this.paths["dot_".concat(i)] = new MakerJs.paths.Circle([x, y], (dotDistance / 2) * scale);
+                }
+            }
+            return RadialDots;
+        }());
+        models.RadialDots = RadialDots;
+        RadialDots.metaParameters = [
+            { title: "Circle Diameter", type: "range", min: 1, max: 100, value: 31 },
+            { title: "Radial Dots", type: "range", min: 1, max: 36, value: 12 },
+            { title: "Dot Distance", type: "range", min: 1, max: 10, value: 1.4 },
+            { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var CornerDots = /** @class */ (function () {
+            function CornerDots(rectWidth, rectHeight, dotDistance, scale) {
+                this.paths = {};
+                var scaledWidth = rectWidth * scale;
+                var scaledHeight = rectHeight * scale;
+                var scaledDotDistance = dotDistance * scale;
+                // Add dots to each corner
+                this.paths["topLeft"] = new MakerJs.paths.Circle([scaledDotDistance, scaledDotDistance], (1.4 / 2) * scale);
+                this.paths["topRight"] = new MakerJs.paths.Circle([scaledWidth - scaledDotDistance, scaledDotDistance], (1.4 / 2) * scale);
+                this.paths["bottomLeft"] = new MakerJs.paths.Circle([scaledDotDistance, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
+                this.paths["bottomRight"] = new MakerJs.paths.Circle([scaledWidth - scaledDotDistance, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
+            }
+            return CornerDots;
+        }());
+        models.CornerDots = CornerDots;
+        CornerDots.metaParameters = [
+            { title: "Rectangle Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Rectangle Height", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Dot Distance", type: "range", min: 1, max: 20, value: 3.2 },
+            { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var EdgeDots = /** @class */ (function () {
+            function EdgeDots(rectWidth, rectHeight, dotDistance, scale) {
+                this.paths = {};
+                var scaledWidth = rectWidth * scale;
+                var scaledHeight = rectHeight * scale;
+                var scaledDotDistance = dotDistance * scale;
+                // Add dots to each edge
+                this.paths["leftEdge"] = new MakerJs.paths.Circle([scaledDotDistance, scaledHeight / 2], (1.4 / 2) * scale);
+                this.paths["rightEdge"] = new MakerJs.paths.Circle([scaledWidth - scaledDotDistance, scaledHeight / 2], (1.4 / 2) * scale);
+                this.paths["topEdge"] = new MakerJs.paths.Circle([scaledWidth / 2, scaledDotDistance], (1.4 / 2) * scale);
+                this.paths["bottomEdge"] = new MakerJs.paths.Circle([scaledWidth / 2, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
+            }
+            return EdgeDots;
+        }());
+        models.EdgeDots = EdgeDots;
+        EdgeDots.metaParameters = [
+            { title: "Rectangle Width", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Rectangle Height", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Dot Distance", type: "range", min: 1, max: 20, value: 3.2 },
+            { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var CustomDot = /** @class */ (function () {
+            /**
+             * Creates a single dot (circle) at a specified location with a specified size.
+             * @param x The x-coordinate of the dot's center.
+             * @param y The y-coordinate of the dot's center.
+             * @param diameter The diameter of the dot.
+             * @param scale The scale factor to apply to the size.
+             */
+            function CustomDot(x, y, diameter, scale) {
+                if (scale === void 0) { scale = 1; }
+                this.paths = {};
+                var radius = (diameter / 2) * scale;
+                this.paths["customDot"] = new MakerJs.paths.Circle([x * scale, y * scale], radius);
+            }
+            return CustomDot;
+        }());
+        models.CustomDot = CustomDot;
+        CustomDot.metaParameters = [
+            { title: "X Position", type: "range", min: 0, max: 100, value: 20 },
+            { title: "Y Position", type: "range", min: 0, max: 100, value: 30 },
+            { title: "Diameter", type: "range", min: 1, max: 10, value: 5 },
+            { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
