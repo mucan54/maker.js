@@ -447,6 +447,15 @@ return kdbush;
 })));
 
 },{}],"makerjs":[function(require,module,exports){
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 /**
  * Root module for Maker.js.
  *
@@ -8849,8 +8858,12 @@ var MakerJs;
             var models = getAllModels();
             var modelDefinition = null;
             name = name.replace(/ /g, '');
-            if (models.indexOf(name) > -1) {
-                modelDefinition = (_a = MakerJs.models)[name].apply(_a, parameters);
+            // Check if model exists
+            if (models[name]) {
+                // Ensure parameters is an array
+                var modelArgs = Array.isArray(parameters) ? parameters : Array.from(parameters);
+                // @ts-ignore
+                modelDefinition = new ((_a = MakerJs.models[name]).bind.apply(_a, __spreadArray([void 0], modelArgs, false)))();
             }
             if (!modelDefinition) {
                 console.error("Model ".concat(name, " not found."));

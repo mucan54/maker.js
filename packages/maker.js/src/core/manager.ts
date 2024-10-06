@@ -48,14 +48,18 @@ namespace MakerJs.manager {
         return shapes;
     }
 
-    export function getModel(name: string, parameters: []): any {
+    export function getModel(name: string, parameters: any[]): any {
         const models = getAllModels();
-
         let modelDefinition = null;
         name = name.replace(/ /g, '');
 
-        if (models.indexOf(name) > -1) {
-            modelDefinition = MakerJs.models[name](...parameters);
+        // Check if model exists
+        if (models[name]) {
+            // Ensure parameters is an array
+            const modelArgs = Array.isArray(parameters) ? parameters : Array.from(parameters);
+
+            // @ts-ignore
+            modelDefinition = new (MakerJs.models[name] as any)(...modelArgs);
         }
 
         if (!modelDefinition) {
