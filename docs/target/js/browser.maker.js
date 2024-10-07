@@ -10409,41 +10409,17 @@ var MakerJs;
     var models;
     (function (models) {
         var Circle = /** @class */ (function () {
-            function Circle(options) {
+            function Circle(diameter) {
                 this.paths = {};
                 this.annotations = {}; // Assuming annotations will be an object, update based on your usage.
-                var diameter = options.diameter || 80; // Default to 80 if diameter is not provided
-                var canvasWidth = options.canvasWidth;
-                var canvasHeight = options.canvasHeight;
-                // Create the circle path
-                this.paths["circle"] = new MakerJs.paths.Circle([0, 0], diameter / 2);
-                // Calculate the object's width and height
-                var objectWidth = diameter;
-                var objectHeight = diameter;
-                // Translate the object to the center of the canvas
-                var translateX = (canvasWidth - objectWidth) / 2;
-                var translateY = (canvasHeight - objectHeight) / 2;
-                // Generate annotations (assuming generateAnnotationsForCircle is a method you implement elsewhere)
-                this.annotations = this.generateAnnotationsForCircle(translateX, translateY, objectWidth);
-                // Move the circle to the new position on the canvas
-                MakerJs.model.move(this, [translateX, translateY]);
+                var circle = new MakerJs.paths.Circle([0, 0], diameter / 2);
+                this.paths = { circle: circle };
             }
-            // Assuming this is a method you implement that generates annotations for the circle
-            Circle.prototype.generateAnnotationsForCircle = function (x, y, diameter) {
-                // Add logic for generating annotations based on x, y, and diameter
-                return {
-                    centerX: x + diameter / 2,
-                    centerY: y + diameter / 2,
-                    diameter: diameter
-                };
-            };
             return Circle;
         }());
         models.Circle = Circle;
         Circle.metaParameters = [
-            { title: "Diameter", type: "range", min: 1, max: 100, value: 80 },
-            { title: "Canvas Width", type: "range", min: 100, max: 1000, value: 500 },
-            { title: "Canvas Height", type: "range", min: 100, max: 1000, value: 500 }
+            { title: "Diameter", type: "range", min: 1, max: 100, value: 80 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
