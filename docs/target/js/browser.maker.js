@@ -8941,7 +8941,7 @@ var MakerJs;
             var left = extents.low[0];
             var right = extents.high[0];
             var centerY = (extents.low[1] + extents.high[1]) / 2;
-            addArrowLine(model, [left - ARROW_OFFSET, centerY], [right + ARROW_OFFSET, centerY], "".concat(getLabelText('diameter', customLangObj), " - ").concat(diameter.toFixed(2), " cm"));
+            addArrowLine(model, [left, centerY], [right, centerY], "".concat(getLabelText('diameter', customLangObj), " - ").concat(diameter.toFixed(2), " cm"));
         }
         // Right Angled Triangle
         function addTriangleDimension(model, base, height, customLangObj) {
@@ -9042,7 +9042,7 @@ var MakerJs;
             var left = extents.low[0];
             var right = extents.high[0];
             var centerY = (extents.low[1] + extents.high[1]) / 2;
-            addArrowLine(model, [left - ARROW_OFFSET, centerY], [right + ARROW_OFFSET, centerY], "".concat(getLabelText('diameter', customLangObj), " - ").concat((radius * 2).toFixed(2), " cm"));
+            addArrowLine(model, [left, centerY], [right, centerY], "".concat(getLabelText('diameter', customLangObj), " - ").concat((radius * 2).toFixed(2), " cm"));
         }
         // Octagon
         function addOctagonDimension(model, sideLength, customLangObj) {
@@ -11095,7 +11095,7 @@ var MakerJs;
         }());
         models.Trapezoid = Trapezoid;
         Trapezoid.metaParameters = [
-            { title: "Width Bottom", type: "range", min: 1, max: 100, value: 50 },
+            { title: "Width Bottom", type: "range", min: 1, max: 100, value: 40 },
             { title: "Width Top", type: "range", min: 1, max: 100, value: 50 },
             { title: "Height", type: "range", min: 1, max: 100, value: 50 }
         ];
