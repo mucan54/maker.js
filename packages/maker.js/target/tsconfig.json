@@ -46,6 +46,7 @@
     "../src/core/svg.ts",
     "../src/core/layout.ts",
     "../src/core/manager.ts",
+    "../src/core/dimention.ts",
     "../src/models/BezierCurve.ts",
     "../src/models/Ellipse.ts",
     "../src/models/ConnectTheDots.ts",
@@ -92,6 +93,8 @@
     "../src/models/RadialDots.ts",
     "../src/models/CornerDots.ts",
     "../src/models/EdgeDots.ts",
-    "../src/models/CustomDot.ts"
+    "../src/models/CustomDot.ts",
+    "../src/models/ArrowLine.ts",
+    "../src/models/SimpleArrow.ts"
 ]
 }
