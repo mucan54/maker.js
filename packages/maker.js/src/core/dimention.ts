@@ -1,342 +1,289 @@
 namespace MakerJs.dimension {
 
-    /**
-     * Adds dimension lines and captions to a model using MakerJs.measure functions.
-     * @param model - The IModel to which the dimensions and captions should be added.
-     * @param metaParamValues - The values of the metaParameters for the current model.
-     * @returns The updated model with dimension lines and captions.
-     */
-    export function addDimensionsToModel(model: IModel, metaParamValues: number[]): IModel | undefined {
-        if (!model) return undefined;
+    const ARROW_OFFSET = 20; // The offset distance between the shape and the dimension arrows
 
-        const modelName = (model.constructor as any).name.toLowerCase();
+    interface LanguageLabels {
+        length: string;
+        width: string;
+        height: string;
+        base: string;
+        diameter: string;
+        radius: string;
+        stemLength: string;
+        stemWidth: string;
+        headLength: string;
+        headWidth: string;
+    }
+
+    const defaultLanguageLabels: LanguageLabels = {
+        length: 'Length',
+        width: 'Width',
+        height: 'Height',
+        base: 'Base',
+        diameter: 'Diameter',
+        radius: 'Radius',
+        stemLength: 'Stem Length',
+        stemWidth: 'Stem Width',
+        headLength: 'Head Length',
+        headWidth: 'Head Width'
+    };
+
+    function getLabelText(labelKey: keyof LanguageLabels, customLangObj?: LanguageLabels): string {
+        const langObj = customLangObj || defaultLanguageLabels;
+        return langObj[labelKey];
+    }
+
+    function addArrowLine(model: IModel, firstPoint: [number, number], secondPoint: [number, number], length: number, label: string) {
+        const arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, 5, label);
+        MakerJs.model.addModel(model, arrowLine, `${label}DimensionLine`);
+    }
+
+    function addRectangleDimension(model: IModel, length: number, width: number, customLangObj?: LanguageLabels) {
         const extents = MakerJs.measure.modelExtents(model);
-        if (!extents) return undefined;
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], length, `${getLabelText('length', customLangObj)} - ${length.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], width, `${getLabelText('width', customLangObj)} - ${width.toFixed(2)} cm`);
+    }
+
+    function addCircleDimension(model: IModel, diameter: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const centerY = (extents.low[1] + extents.high[1]) / 2;
+
+        addArrowLine(model, [left - ARROW_OFFSET, centerY], [right + ARROW_OFFSET, centerY], diameter, `${getLabelText('diameter', customLangObj)} - ${diameter.toFixed(2)} cm`);
+    }
+
+    function addTriangleDimension(model: IModel, base: number, height: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], base, `${getLabelText('base', customLangObj)} - ${base.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, `${getLabelText('height', customLangObj)} - ${height.toFixed(2)} cm`);
+    }
+
+    function addRightAngledTriangleMirroredDimension(model: IModel, base: number, height: number, customLangObj?: LanguageLabels) {
+        addTriangleDimension(model, base, height, customLangObj); // Similar to Right Angled Triangle
+    }
+
+    function addArrowDimension(model: IModel, stemLength: number, stemWidth: number, headLength: number, headWidth: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        // Adjusted calculation for stem top and bottom
+        const stemMidHeight = bottom + (stemWidth / 2);
+        const stemBottom = bottom;
+        const stemTop = bottom + stemWidth;
+        const stemBeginHeight = bottom + ((headWidth - stemWidth) / 2);
+
+        // Stem Length (Horizontal Arrow)
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [left + stemLength, bottom - ARROW_OFFSET], stemLength, `${getLabelText('stemLength', customLangObj)} - ${stemLength.toFixed(2)} cm`);
+
+        // Head Length (Horizontal Arrow)
+        addArrowLine(model, [left + stemLength, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], headLength, `${getLabelText('headLength', customLangObj)} - ${headLength.toFixed(2)} cm`);
+
+        // Head Width (Vertical Arrow)
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], headWidth, `${getLabelText('headWidth', customLangObj)} - ${headWidth.toFixed(2)} cm`);
+
+        // Corrected Stem Width (Vertical Arrow) - align with the mid-section of the stem
+        addArrowLine(model, [left - ARROW_OFFSET, stemBeginHeight], [left - ARROW_OFFSET, stemBeginHeight + stemWidth], stemWidth, `${getLabelText('stemWidth', customLangObj)} - ${stemWidth.toFixed(2)} cm`);
+    }
+
+    function addPolygonDimension(model: IModel, radius: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left - ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], radius * 2, `${getLabelText('radius', customLangObj)} - ${radius.toFixed(2)} cm`);
+    }
+
+    function addEllipseDimension(model: IModel, width: number, height: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], width, `${getLabelText('width', customLangObj)} - ${width.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, `${getLabelText('height', customLangObj)} - ${height.toFixed(2)} cm`);
+    }
+
+    function addHeartDimension(model: IModel, radius: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+        const left = extents.low[0];
+        const right = extents.high[0];
+
+        addArrowLine(model, [left - ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], radius, `${getLabelText('radius', customLangObj)} - ${radius.toFixed(2)} cm`);
+    }
+
+    function addSlopedRectangleDimension(model: IModel, widthTop: number, widthBottom: number, height: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], widthBottom, `${getLabelText('width', customLangObj)} - ${widthBottom.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, `${getLabelText('height', customLangObj)} - ${height.toFixed(2)} cm`);
+    }
+
+    function addArchedRectangleDimension(model: IModel, width: number, height: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], width, `${getLabelText('width', customLangObj)} - ${width.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, `${getLabelText('height', customLangObj)} - ${height.toFixed(2)} cm`);
+    }
+
+    function addHalfCircleDimension(model: IModel, diameter: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], diameter, `${getLabelText('diameter', customLangObj)} - ${diameter.toFixed(2)} cm`);
+    }
+
+    function addQuarterCircleDimension(model: IModel, radius: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], radius * 2, `${getLabelText('radius', customLangObj)} - ${radius.toFixed(2)} cm`);
+    }
+
+    function addHexagonDimension(model: IModel, sideLength: number, customLangObj?: LanguageLabels) {
+        addPolygonDimension(model, sideLength, customLangObj); // Similar to polygon dimensions
+    }
+
+    function addOctagonDimension(model: IModel, sideLength: number, customLangObj?: LanguageLabels) {
+        addPolygonDimension(model, sideLength, customLangObj); // Similar to polygon dimensions
+    }
+
+    function addStarDimension(model: IModel, outerRadius: number, innerRadius: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], outerRadius * 2, `${getLabelText('radius', customLangObj)} - ${outerRadius.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], innerRadius * 2, `${getLabelText('radius', customLangObj)} - ${innerRadius.toFixed(2)} cm`);
+    }
+
+    function addKiteDimension(model: IModel, width: number, heightTop: number, heightBottom: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], width, `${getLabelText('width', customLangObj)} - ${width.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], heightTop + heightBottom, `${getLabelText('height', customLangObj)} - ${(heightTop + heightBottom).toFixed(2)} cm`);
+    }
+
+    function addTrapezoidDimension(model: IModel, widthBottom: number, widthTop: number, height: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const bottom = extents.low[1];
+        const top = extents.high[1];
+
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], widthBottom, `${getLabelText('width', customLangObj)} - ${widthBottom.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, `${getLabelText('height', customLangObj)} - ${height.toFixed(2)} cm`);
+    }
+
+    // Parse shape type from constructor and apply corresponding dimensions
+    export function applyDimensions(model: IModel, metaParamValues: number[], customLangObj?: LanguageLabels) {
+        const modelName = (model.constructor as any).name.toLowerCase();
 
         switch (modelName) {
             case 'rectangle':
-                addRectangleDimensions(model, metaParamValues);
+                addRectangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'circle':
-                addCircleDimensions(model, metaParamValues);
+                addCircleDimension(model, metaParamValues[0], customLangObj);
                 break;
             case 'rightangledtriangle':
+                addTriangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                break;
             case 'rightangledtrianglemirrored':
-                addRightAngledTriangleDimensions(model, metaParamValues);
+                addRightAngledTriangleMirroredDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'archedrectangle':
-                addArchedRectangleDimensions(model, metaParamValues);
+                addArchedRectangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'roundedrectangle':
-                addRoundedRectangleDimensions(model, metaParamValues);
+                addArchedRectangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'egg':
-                addEggDimensions(model, metaParamValues);
+                addEllipseDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'ellipse':
-                addEllipseDimensions(model, metaParamValues);
+                addEllipseDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'flatoval':
-                addFlatOvalDimensions(model, metaParamValues);
+                addEllipseDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'isoscelestriangle':
-                addIsoscelesTriangleDimensions(model, metaParamValues);
+                addTriangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'arrow':
-                addArrowDimensions(model, metaParamValues);
+                addArrowDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], metaParamValues[3], customLangObj);
                 break;
-            case 'halfcircle':
-                addHalfCircleDimensions(model, metaParamValues);
+            case 'halfCircle':
+                addHalfCircleDimension(model, metaParamValues[0], customLangObj);
                 break;
             case 'quartercircle':
-                addQuarterCircleDimensions(model, metaParamValues);
+                addQuarterCircleDimension(model, metaParamValues[0], customLangObj);
                 break;
             case 'hexagon':
-                addHexagonDimensions(model, metaParamValues);
+                addHexagonDimension(model, metaParamValues[0], customLangObj);
                 break;
             case 'polygon':
-                addPolygonDimensions(model, metaParamValues);
+                addPolygonDimension(model, metaParamValues[0], customLangObj);
                 break;
             case 'octagon':
-                addOctagonDimensions(model, metaParamValues);
+                addOctagonDimension(model, metaParamValues[0], customLangObj);
                 break;
             case 'star':
-                addStarDimensions(model, metaParamValues);
+                addStarDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'slopedrectangle':
-                addSlopedRectangleDimensions(model, metaParamValues);
+                addSlopedRectangleDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
                 break;
             case 'slopedrightrectangle':
-                addSlopedRightRectangleDimensions(model, metaParamValues);
+                addSlopedRectangleDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
                 break;
             case 'trapezoid':
-                addTrapezoidDimensions(model, metaParamValues);
+                addTrapezoidDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
                 break;
             case 'heart':
-                addHeartDimensions(model, metaParamValues);
+                addHeartDimension(model, metaParamValues[0], customLangObj);
                 break;
             case 'kite':
-                addKiteDimensions(model, metaParamValues);
+                addKiteDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
                 break;
             default:
-                console.warn(`Model type ${modelName} not recognized.`);
-                break;
+                throw new Error(`Model type not recognized: ${modelName}`);
         }
-
-        return model;
-    }
-
-    // Shape-specific dimension functions
-
-    function addRectangleDimensions(model: IModel, metaParamValues: number[]) {
-        const [length, width] = metaParamValues;
-
-        const widthStart = [0, -20];
-        const widthEnd = [length, -20];
-        addArrowLine(model, widthStart, widthEnd, `Width: ${width.toFixed(2)} cm`, 'widthDimensionLine');
-
-        const heightStart = [-20, 0];
-        const heightEnd = [-20, width];
-        addArrowLine(model, heightStart, heightEnd, `Length: ${length.toFixed(2)} cm`, 'lengthDimensionLine');
-    }
-
-    function addCircleDimensions(model: IModel, metaParamValues: number[]) {
-        const [diameter] = metaParamValues;
-        const radius = diameter / 2;
-
-        const startPoint = [-radius, 0];
-        const endPoint = [radius, 0];
-        addArrowLine(model, startPoint, endPoint, `Diameter: ${diameter.toFixed(2)} cm`, 'diameterDimensionLine');
-    }
-
-    function addRightAngledTriangleDimensions(model: IModel, metaParamValues: number[]) {
-        const [base, height] = metaParamValues;
-
-        const baseStart = [0, 0];
-        const baseEnd = [base, 0];
-        addArrowLine(model, baseStart, baseEnd, `Base: ${base.toFixed(2)} cm`, 'baseDimensionLine');
-
-        const heightStart = [base, 0];
-        const heightEnd = [base, height];
-        addArrowLine(model, heightStart, heightEnd, `Height: ${height.toFixed(2)} cm`, 'heightDimensionLine');
-    }
-
-    function addArchedRectangleDimensions(model: IModel, metaParamValues: number[]) {
-        const [width, height] = metaParamValues;
-
-        const widthStart = [0, -20];
-        const widthEnd = [width, -20];
-        addArrowLine(model, widthStart, widthEnd, `Width: ${width.toFixed(2)} cm`, 'widthDimensionLine');
-
-        const heightStart = [-20, 0];
-        const heightEnd = [-20, height];
-        addArrowLine(model, heightStart, heightEnd, `Height: ${height.toFixed(2)} cm`, 'heightDimensionLine');
-    }
-
-    function addRoundedRectangleDimensions(model: IModel, metaParamValues: number[]) {
-        const [length, width, radius] = metaParamValues;
-
-        const widthStart = [0, -20];
-        const widthEnd = [width, -20];
-        addArrowLine(model, widthStart, widthEnd, `Width: ${width.toFixed(2)} cm`, 'widthDimensionLine');
-
-        const lengthStart = [-20, 0];
-        const lengthEnd = [-20, length];
-        addArrowLine(model, lengthStart, lengthEnd, `Length: ${length.toFixed(2)} cm`, 'lengthDimensionLine');
-
-        const radiusStart = [width / 2, length];
-        const radiusEnd = [width / 2 + radius, length];
-        addArrowLine(model, radiusStart, radiusEnd, `Radius: ${radius.toFixed(2)} cm`, 'radiusDimensionLine');
-    }
-
-    function addEggDimensions(model: IModel, metaParamValues: number[]) {
-        const [width, height] = metaParamValues;
-
-        const widthStart = [0, -20];
-        const widthEnd = [width, -20];
-        addArrowLine(model, widthStart, widthEnd, `Width: ${width.toFixed(2)} cm`, 'widthDimensionLine');
-
-        const heightStart = [-20, 0];
-        const heightEnd = [-20, height];
-        addArrowLine(model, heightStart, heightEnd, `Height: ${height.toFixed(2)} cm`, 'heightDimensionLine');
-    }
-
-    function addEllipseDimensions(model: IModel, metaParamValues: number[]) {
-        const [width, height] = metaParamValues;
-
-        const widthStart = [-width / 2, 0];
-        const widthEnd = [width / 2, 0];
-        addArrowLine(model, widthStart, widthEnd, `Width: ${width.toFixed(2)} cm`, 'widthDimensionLine');
-
-        const heightStart = [0, -height / 2];
-        const heightEnd = [0, height / 2];
-        addArrowLine(model, heightStart, heightEnd, `Height: ${height.toFixed(2)} cm`, 'heightDimensionLine');
-    }
-
-    function addFlatOvalDimensions(model: IModel, metaParamValues: number[]) {
-        const [width, radius] = metaParamValues;
-
-        const widthStart = [-width / 2, 0];
-        const widthEnd = [width / 2, 0];
-        addArrowLine(model, widthStart, widthEnd, `Width: ${width.toFixed(2)} cm`, 'widthDimensionLine');
-
-        const radiusStart = [0, -radius];
-        const radiusEnd = [0, radius];
-        addArrowLine(model, radiusStart, radiusEnd, `Radius: ${radius.toFixed(2)} cm`, 'radiusDimensionLine');
-    }
-
-    function addIsoscelesTriangleDimensions(model: IModel, metaParamValues: number[]) {
-        const [base, height] = metaParamValues;
-
-        const baseStart = [0, 0];
-        const baseEnd = [base, 0];
-        addArrowLine(model, baseStart, baseEnd, `Base: ${base.toFixed(2)} cm`, 'baseDimensionLine');
-
-        const heightStart = [base / 2, 0];
-        const heightEnd = [base / 2, height];
-        addArrowLine(model, heightStart, heightEnd, `Height: ${height.toFixed(2)} cm`, 'heightDimensionLine');
-    }
-
-    function addArrowDimensions(model: IModel, metaParamValues: number[]) {
-        const [stemLength, stemWidth, headLength, headWidth] = metaParamValues;
-
-        const stemStart = [0, 0];
-        const stemEnd = [stemLength, 0];
-        addArrowLine(model, stemStart, stemEnd, `Stem Length: ${stemLength.toFixed(2)} cm`, 'stemDimensionLine');
-
-        const headStart = [stemLength, -headWidth / 2];
-        const headEnd = [stemLength + headLength, 0];
-        addArrowLine(model, headStart, headEnd, `Head Length: ${headLength.toFixed(2)} cm`, 'headDimensionLine');
-    }
-
-    function addHalfCircleDimensions(model: IModel, metaParamValues: number[]) {
-        const [diameter] = metaParamValues;
-        const radius = diameter / 2;
-
-        const startPoint = [-radius, 0];
-        const endPoint = [radius, 0];
-        addArrowLine(model, startPoint, endPoint, `Diameter: ${diameter.toFixed(2)} cm`, 'diameterDimensionLine');
-    }
-
-    function addQuarterCircleDimensions(model: IModel, metaParamValues: number[]) {
-        const [radius] = metaParamValues;
-
-        const radiusStart = [0, 0];
-        const radiusEnd = [radius, 0];
-        addArrowLine(model, radiusStart, radiusEnd, `Radius: ${radius.toFixed(2)} cm`, 'radiusDimensionLine');
-    }
-
-    function addHexagonDimensions(model: IModel, metaParamValues: number[]) {
-        const [sideLength] = metaParamValues;
-
-        const sideStart = [0, 0];
-        const sideEnd = [sideLength, 0];
-        addArrowLine(model, sideStart, sideEnd, `Side Length: ${sideLength.toFixed(2)} cm`, 'sideLengthDimensionLine');
-    }
-
-    function addPolygonDimensions(model: IModel, metaParamValues: number[]) {
-        const [numberOfSides, radius] = metaParamValues;
-
-        const radiusStart = [0, 0];
-        const radiusEnd = [radius, 0];
-        addArrowLine(model, radiusStart, radiusEnd, `Radius: ${radius.toFixed(2)} cm`, 'radiusDimensionLine');
-    }
-
-    function addOctagonDimensions(model: IModel, metaParamValues: number[]) {
-        const [sideLength] = metaParamValues;
-
-        const sideStart = [0, 0];
-        const sideEnd = [sideLength, 0];
-        addArrowLine(model, sideStart, sideEnd, `Side Length: ${sideLength.toFixed(2)} cm`, 'sideLengthDimensionLine');
-    }
-
-    function addStarDimensions(model: IModel, metaParamValues: number[]) {
-        const [numberOfPoints, outerRadius, innerRadius] = metaParamValues;
-
-        const outerRadiusStart = [0, 0];
-        const outerRadiusEnd = [outerRadius, 0];
-        addArrowLine(model, outerRadiusStart, outerRadiusEnd, `Outer Radius: ${outerRadius.toFixed(2)} cm`, 'outerRadiusDimensionLine');
-
-        const innerRadiusStart = [0, 0];
-        const innerRadiusEnd = [innerRadius, 0];
-        addArrowLine(model, innerRadiusStart, innerRadiusEnd, `Inner Radius: ${innerRadius.toFixed(2)} cm`, 'innerRadiusDimensionLine');
-    }
-
-    function addSlopedRectangleDimensions(model: IModel, metaParamValues: number[]) {
-        const [width, heightLeft, heightRight] = metaParamValues;
-
-        const widthStart = [0, 0];
-        const widthEnd = [width, 0];
-        addArrowLine(model, widthStart, widthEnd, `Width: ${width.toFixed(2)} cm`, 'widthDimensionLine');
-
-        const heightLeftStart = [0, 0];
-        const heightLeftEnd = [0, heightLeft];
-        addArrowLine(model, heightLeftStart, heightLeftEnd, `Height Left: ${heightLeft.toFixed(2)} cm`, 'heightLeftDimensionLine');
-
-        const heightRightStart = [width, 0];
-        const heightRightEnd = [width, heightRight];
-        addArrowLine(model, heightRightStart, heightRightEnd, `Height Right: ${heightRight.toFixed(2)} cm`, 'heightRightDimensionLine');
-    }
-
-    function addSlopedRightRectangleDimensions(model: IModel, metaParamValues: number[]) {
-        const [widthTop, widthBottom, height] = metaParamValues;
-
-        const widthTopStart = [0, height];
-        const widthTopEnd = [widthTop, height];
-        addArrowLine(model, widthTopStart, widthTopEnd, `Width Top: ${widthTop.toFixed(2)} cm`, 'widthTopDimensionLine');
-
-        const widthBottomStart = [0, 0];
-        const widthBottomEnd = [widthBottom, 0];
-        addArrowLine(model, widthBottomStart, widthBottomEnd, `Width Bottom: ${widthBottom.toFixed(2)} cm`, 'widthBottomDimensionLine');
-
-        const heightStart = [0, 0];
-        const heightEnd = [0, height];
-        addArrowLine(model, heightStart, heightEnd, `Height: ${height.toFixed(2)} cm`, 'heightDimensionLine');
-    }
-
-    function addTrapezoidDimensions(model: IModel, metaParamValues: number[]) {
-        const [widthBottom, widthTop, height] = metaParamValues;
-
-        const widthBottomStart = [0, 0];
-        const widthBottomEnd = [widthBottom, 0];
-        addArrowLine(model, widthBottomStart, widthBottomEnd, `Width Bottom: ${widthBottom.toFixed(2)} cm`, 'widthBottomDimensionLine');
-
-        const widthTopStart = [0, height];
-        const widthTopEnd = [widthTop, height];
-        addArrowLine(model, widthTopStart, widthTopEnd, `Width Top: ${widthTop.toFixed(2)} cm`, 'widthTopDimensionLine');
-
-        const heightStart = [0, 0];
-        const heightEnd = [0, height];
-        addArrowLine(model, heightStart, heightEnd, `Height: ${height.toFixed(2)} cm`, 'heightDimensionLine');
-    }
-
-    function addHeartDimensions(model: IModel, metaParamValues: number[]) {
-        const [radius, angle] = metaParamValues;
-
-        const radiusStart = [0, 0];
-        const radiusEnd = [radius, 0];
-        addArrowLine(model, radiusStart, radiusEnd, `Radius: ${radius.toFixed(2)} cm`, 'radiusDimensionLine');
-
-        const angleStart = [radius, 0];
-        const angleEnd = [radius + 20, 0];
-        addArrowLine(model, angleStart, angleEnd, `Angle: ${angle.toFixed(2)} degrees`, 'angleDimensionLine');
-    }
-
-    function addKiteDimensions(model: IModel, metaParamValues: number[]) {
-        const [width, heightTop, heightBottom] = metaParamValues;
-
-        const widthStart = [-width / 2, 0];
-        const widthEnd = [width / 2, 0];
-        addArrowLine(model, widthStart, widthEnd, `Width: ${width.toFixed(2)} cm`, 'widthDimensionLine');
-
-        const heightStart = [0, -heightBottom];
-        const heightEnd = [0, heightTop];
-        addArrowLine(model, heightStart, heightEnd, `Height: ${(heightTop + heightBottom).toFixed(2)} cm`, 'heightDimensionLine');
-    }
-
-    // Helper function for adding arrow lines with captions
-    function addArrowLine(model: IModel, start: IPoint, end: IPoint, caption: string, name: string) {
-        const arrowLine = new MakerJs.models.ArrowLine([start[0], start[1]], [end[0], end[1]], 5, caption);
-        MakerJs.model.addModel(model, arrowLine, name);
     }
 }

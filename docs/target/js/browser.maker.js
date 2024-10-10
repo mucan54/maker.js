@@ -44,7 +44,7 @@ and limitations under the License.
  * browserify:
  *   license: MIT (http://opensource.org/licenses/MIT)
  *   author: James Halliday <mail@substack.net>
- *   version: 17.0.0
+ *   version: 17.0.1
  *
  * clone:
  *   license: MIT (http://opensource.org/licenses/MIT)
@@ -54,9 +54,9 @@ and limitations under the License.
  *
  * graham_scan:
  *   license: MIT (http://opensource.org/licenses/MIT)
- *   author: Brian Barnett <brian@3kb.co.uk>
+ *   author: Brian Barnett <me@brianbar.net>
  *   homepage: http://brian3kb.github.io/graham_scan_js
- *   version: 1.0.4
+ *   version: 1.0.5
  *
  * kdbush:
  *   license: ISC (http://opensource.org/licenses/ISC)
@@ -242,9 +242,10 @@ if (typeof module === 'object' && module.exports) {
  * Graham's Scan Convex Hull Algorithm
  * @desc An implementation of the Graham's Scan Convex Hull algorithm in JavaScript.
  * @author Brian Barnett, brian@3kb.co.uk, http://brianbar.net/ || http://3kb.co.uk/
- * @version 1.0.4
+ * @version 1.0.5
  */
-function ConvexHullGrahamScan(){this.anchorPoint=void 0,this.reverse=!1,this.points=[]}ConvexHullGrahamScan.prototype={constructor:ConvexHullGrahamScan,Point:function(n,t){this.x=n,this.y=t},_findPolarAngle:function(n,t){var i,o,h=57.295779513082;if(!n||!t)return 0;if(i=t.x-n.x,o=t.y-n.y,0==i&&0==o)return 0;var r=Math.atan2(o,i)*h;return this.reverse?0>=r&&(r+=360):r>=0&&(r+=360),r},addPoint:function(n,t){return void 0===this.anchorPoint?void(this.anchorPoint=new this.Point(n,t)):this.anchorPoint.y>t&&this.anchorPoint.x>n||this.anchorPoint.y===t&&this.anchorPoint.x>n||this.anchorPoint.y>t&&this.anchorPoint.x===n?(this.points.push(new this.Point(this.anchorPoint.x,this.anchorPoint.y)),void(this.anchorPoint=new this.Point(n,t))):void this.points.push(new this.Point(n,t))},_sortPoints:function(){var n=this;return this.points.sort(function(t,i){var o=n._findPolarAngle(n.anchorPoint,t),h=n._findPolarAngle(n.anchorPoint,i);return h>o?-1:o>h?1:0})},_checkPoints:function(n,t,i){var o,h=this._findPolarAngle(n,t),r=this._findPolarAngle(n,i);return h>r?(o=h-r,!(o>180)):r>h?(o=r-h,o>180):!0},getHull:function(){var n,t,i=[];if(this.reverse=this.points.every(function(n){return n.x<0&&n.y<0}),n=this._sortPoints(),t=n.length,3>t)return n.unshift(this.anchorPoint),n;for(i.push(n.shift(),n.shift());;){var o,h,r;if(i.push(n.shift()),o=i[i.length-3],h=i[i.length-2],r=i[i.length-1],this._checkPoints(o,h,r)&&i.splice(i.length-2,1),0==n.length){if(t==i.length){var e=this.anchorPoint;return i=i.filter(function(n){return!!n}),i.some(function(n){return n.x==e.x&&n.y==e.y})||i.unshift(this.anchorPoint),i}n=i,t=n.length,i=[],i.push(n.shift(),n.shift())}}}},"function"==typeof define&&define.amd&&define(function(){return ConvexHullGrahamScan}),"undefined"!=typeof module&&(module.exports=ConvexHullGrahamScan);
+function ConvexHullGrahamScan(){this.anchorPoint=void 0,this.reverse=!1,this.points=[]}ConvexHullGrahamScan.prototype={constructor:ConvexHullGrahamScan,Point:function(a,b){this.x=a,this.y=b},_findPolarAngle:function(a,b){var c,d,e=57.295779513082;if(!a||!b)return 0;if(c=b.x-a.x,d=b.y-a.y,0==c&&0==d)return 0;var f=Math.atan2(d,c)*e;return this.reverse?0>=f&&(f+=360):f>=0&&(f+=360),f},addPoint:function(a,b){var c=void 0===this.anchorPoint||this.anchorPoint.y>b||this.anchorPoint.y===b&&this.anchorPoint.x>a;c?(void 0!==this.anchorPoint&&this.points.push(new this.Point(this.anchorPoint.x,this.anchorPoint.y)),this.anchorPoint=new this.Point(a,b)):this.points.push(new this.Point(a,b))},_sortPoints:function(){var a=this;return this.points.sort(function(b,c){var d=a._findPolarAngle(a.anchorPoint,b),e=a._findPolarAngle(a.anchorPoint,c);return e>d?-1:d>e?1:0})},_checkPoints:function(a,b,c){var d,e=this._findPolarAngle(a,b),f=this._findPolarAngle(a,c);return e>f?(d=e-f,!(d>180)):f>e?(d=f-e,d>180):!0},getHull:function(){var a,b,c=[];if(this.reverse=this.points.every(function(a){return a.x<0&&a.y<0}),a=this._sortPoints(),b=a.length,3>b)return a.unshift(this.anchorPoint),a;for(c.push(a.shift(),a.shift());;){var d,e,f;if(c.push(a.shift()),d=c[c.length-3],e=c[c.length-2],f=c[c.length-1],this._checkPoints(d,e,f)&&c.splice(c.length-2,1),0==a.length){if(b==c.length){var g=this.anchorPoint;return c=c.filter(function(a){return!!a}),c.some(function(a){return a.x==g.x&&a.y==g.y})||c.unshift(this.anchorPoint),c}a=c,b=a.length,c=[],c.push(a.shift(),a.shift())}}}},"function"==typeof define&&define.amd&&define(function(){return ConvexHullGrahamScan}),"undefined"!=typeof module&&(module.exports=ConvexHullGrahamScan);
+
 },{}],4:[function(require,module,exports){
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
@@ -6609,6 +6610,7 @@ var MakerJs;
                 else {
                     //revert the above
                     if (tempKey in b) {
+                        //@ts-ignore
                         b.paths = b[tempKey];
                         delete b[tempKey];
                     }
@@ -6617,6 +6619,7 @@ var MakerJs;
                             delete b.layer;
                         }
                         else {
+                            //@ts-ignore
                             b.layer = b[tempLayerKey];
                         }
                         delete b[tempLayerKey];
@@ -8898,6 +8901,246 @@ var MakerJs;
 })(MakerJs || (MakerJs = {}));
 var MakerJs;
 (function (MakerJs) {
+    var dimension;
+    (function (dimension) {
+        var ARROW_OFFSET = 20; // The offset distance between the shape and the dimension arrows
+        var defaultLanguageLabels = {
+            length: 'Length',
+            width: 'Width',
+            height: 'Height',
+            base: 'Base',
+            diameter: 'Diameter',
+            radius: 'Radius',
+            stemLength: 'Stem Length',
+            stemWidth: 'Stem Width',
+            headLength: 'Head Length',
+            headWidth: 'Head Width'
+        };
+        function getLabelText(labelKey, customLangObj) {
+            var langObj = customLangObj || defaultLanguageLabels;
+            return langObj[labelKey];
+        }
+        function addArrowLine(model, firstPoint, secondPoint, length, label) {
+            var arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, 5, label);
+            MakerJs.model.addModel(model, arrowLine, "".concat(label, "DimensionLine"));
+        }
+        function addRectangleDimension(model, length, width, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], length, "".concat(getLabelText('length', customLangObj), " - ").concat(length.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], width, "".concat(getLabelText('width', customLangObj), " - ").concat(width.toFixed(2), " cm"));
+        }
+        function addCircleDimension(model, diameter, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var centerY = (extents.low[1] + extents.high[1]) / 2;
+            addArrowLine(model, [left - ARROW_OFFSET, centerY], [right + ARROW_OFFSET, centerY], diameter, "".concat(getLabelText('diameter', customLangObj), " - ").concat(diameter.toFixed(2), " cm"));
+        }
+        function addTriangleDimension(model, base, height, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], base, "".concat(getLabelText('base', customLangObj), " - ").concat(base.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, "".concat(getLabelText('height', customLangObj), " - ").concat(height.toFixed(2), " cm"));
+        }
+        function addRightAngledTriangleMirroredDimension(model, base, height, customLangObj) {
+            addTriangleDimension(model, base, height, customLangObj); // Similar to Right Angled Triangle
+        }
+        function addArrowDimension(model, stemLength, stemWidth, headLength, headWidth, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            // Adjusted calculation for stem top and bottom
+            var stemMidHeight = bottom + (stemWidth / 2);
+            var stemBottom = bottom;
+            var stemTop = bottom + stemWidth;
+            var stemBeginHeight = bottom + ((headWidth - stemWidth) / 2);
+            // Stem Length (Horizontal Arrow)
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [left + stemLength, bottom - ARROW_OFFSET], stemLength, "".concat(getLabelText('stemLength', customLangObj), " - ").concat(stemLength.toFixed(2), " cm"));
+            // Head Length (Horizontal Arrow)
+            addArrowLine(model, [left + stemLength, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], headLength, "".concat(getLabelText('headLength', customLangObj), " - ").concat(headLength.toFixed(2), " cm"));
+            // Head Width (Vertical Arrow)
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], headWidth, "".concat(getLabelText('headWidth', customLangObj), " - ").concat(headWidth.toFixed(2), " cm"));
+            // Corrected Stem Width (Vertical Arrow) - align with the mid-section of the stem
+            addArrowLine(model, [left - ARROW_OFFSET, stemBeginHeight], [left - ARROW_OFFSET, stemBeginHeight + stemWidth], stemWidth, "".concat(getLabelText('stemWidth', customLangObj), " - ").concat(stemWidth.toFixed(2), " cm"));
+        }
+        function addPolygonDimension(model, radius, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left - ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], radius * 2, "".concat(getLabelText('radius', customLangObj), " - ").concat(radius.toFixed(2), " cm"));
+        }
+        function addEllipseDimension(model, width, height, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], width, "".concat(getLabelText('width', customLangObj), " - ").concat(width.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, "".concat(getLabelText('height', customLangObj), " - ").concat(height.toFixed(2), " cm"));
+        }
+        function addHeartDimension(model, radius, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            var left = extents.low[0];
+            var right = extents.high[0];
+            addArrowLine(model, [left - ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], radius, "".concat(getLabelText('radius', customLangObj), " - ").concat(radius.toFixed(2), " cm"));
+        }
+        function addSlopedRectangleDimension(model, widthTop, widthBottom, height, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], widthBottom, "".concat(getLabelText('width', customLangObj), " - ").concat(widthBottom.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, "".concat(getLabelText('height', customLangObj), " - ").concat(height.toFixed(2), " cm"));
+        }
+        function addArchedRectangleDimension(model, width, height, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], width, "".concat(getLabelText('width', customLangObj), " - ").concat(width.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, "".concat(getLabelText('height', customLangObj), " - ").concat(height.toFixed(2), " cm"));
+        }
+        function addHalfCircleDimension(model, diameter, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], diameter, "".concat(getLabelText('diameter', customLangObj), " - ").concat(diameter.toFixed(2), " cm"));
+        }
+        function addQuarterCircleDimension(model, radius, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], radius * 2, "".concat(getLabelText('radius', customLangObj), " - ").concat(radius.toFixed(2), " cm"));
+        }
+        function addHexagonDimension(model, sideLength, customLangObj) {
+            addPolygonDimension(model, sideLength, customLangObj); // Similar to polygon dimensions
+        }
+        function addOctagonDimension(model, sideLength, customLangObj) {
+            addPolygonDimension(model, sideLength, customLangObj); // Similar to polygon dimensions
+        }
+        function addStarDimension(model, outerRadius, innerRadius, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], outerRadius * 2, "".concat(getLabelText('radius', customLangObj), " - ").concat(outerRadius.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], innerRadius * 2, "".concat(getLabelText('radius', customLangObj), " - ").concat(innerRadius.toFixed(2), " cm"));
+        }
+        function addKiteDimension(model, width, heightTop, heightBottom, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], width, "".concat(getLabelText('width', customLangObj), " - ").concat(width.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], heightTop + heightBottom, "".concat(getLabelText('height', customLangObj), " - ").concat((heightTop + heightBottom).toFixed(2), " cm"));
+        }
+        function addTrapezoidDimension(model, widthBottom, widthTop, height, customLangObj) {
+            var extents = MakerJs.measure.modelExtents(model);
+            var left = extents.low[0];
+            var right = extents.high[0];
+            var bottom = extents.low[1];
+            var top = extents.high[1];
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], widthBottom, "".concat(getLabelText('width', customLangObj), " - ").concat(widthBottom.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], height, "".concat(getLabelText('height', customLangObj), " - ").concat(height.toFixed(2), " cm"));
+        }
+        // Parse shape type from constructor and apply corresponding dimensions
+        function applyDimensions(model, metaParamValues, customLangObj) {
+            var modelName = model.constructor.name.toLowerCase();
+            switch (modelName) {
+                case 'rectangle':
+                    addRectangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'circle':
+                    addCircleDimension(model, metaParamValues[0], customLangObj);
+                    break;
+                case 'rightangledtriangle':
+                    addTriangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'rightangledtrianglemirrored':
+                    addRightAngledTriangleMirroredDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'archedrectangle':
+                    addArchedRectangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'roundedrectangle':
+                    addArchedRectangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'egg':
+                    addEllipseDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'ellipse':
+                    addEllipseDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'flatoval':
+                    addEllipseDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'isoscelestriangle':
+                    addTriangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'arrow':
+                    addArrowDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], metaParamValues[3], customLangObj);
+                    break;
+                case 'halfCircle':
+                    addHalfCircleDimension(model, metaParamValues[0], customLangObj);
+                    break;
+                case 'quartercircle':
+                    addQuarterCircleDimension(model, metaParamValues[0], customLangObj);
+                    break;
+                case 'hexagon':
+                    addHexagonDimension(model, metaParamValues[0], customLangObj);
+                    break;
+                case 'polygon':
+                    addPolygonDimension(model, metaParamValues[0], customLangObj);
+                    break;
+                case 'octagon':
+                    addOctagonDimension(model, metaParamValues[0], customLangObj);
+                    break;
+                case 'star':
+                    addStarDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
+                    break;
+                case 'slopedrectangle':
+                    addSlopedRectangleDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
+                    break;
+                case 'slopedrightrectangle':
+                    addSlopedRectangleDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
+                    break;
+                case 'trapezoid':
+                    addTrapezoidDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
+                    break;
+                case 'heart':
+                    addHeartDimension(model, metaParamValues[0], customLangObj);
+                    break;
+                case 'kite':
+                    addKiteDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
+                    break;
+                default:
+                    throw new Error("Model type not recognized: ".concat(modelName));
+            }
+        }
+        dimension.applyDimensions = applyDimensions;
+    })(dimension = MakerJs.dimension || (MakerJs.dimension = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
     var models;
     (function (models) {
         /**
@@ -10935,6 +11178,77 @@ var MakerJs;
             { title: "Y Position", type: "range", min: 0, max: 100, value: 30 },
             { title: "Diameter", type: "range", min: 1, max: 10, value: 5 },
             { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var ArrowLine = /** @class */ (function () {
+            function ArrowLine(FirstArrowLocation, SecondArrowLocation, arrowLength, captionText) {
+                this.paths = {};
+                this.models = {};
+                // Calculate angle between first and second points
+                var dx = SecondArrowLocation[0] - FirstArrowLocation[0];
+                var dy = SecondArrowLocation[1] - FirstArrowLocation[1];
+                var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                // Create the first arrow, pointing towards the second point
+                this.models.firstArrow = new models.SimpleArrow(arrowLength);
+                MakerJs.model.move(this.models.firstArrow, FirstArrowLocation);
+                MakerJs.model.rotate(this.models.firstArrow, angle, FirstArrowLocation); // Rotate based on the line direction
+                // Create the second arrow, pointing back towards the first point
+                this.models.secondArrow = new models.SimpleArrow(arrowLength);
+                MakerJs.model.move(this.models.secondArrow, SecondArrowLocation);
+                MakerJs.model.rotate(this.models.secondArrow, angle + 180, SecondArrowLocation); // Rotate in the opposite direction
+                // Create the dimension line
+                this.paths.line = new MakerJs.paths.Line(FirstArrowLocation, SecondArrowLocation);
+                // Calculate the midpoint of the line for the caption
+                var midPoint = MakerJs.point.average(FirstArrowLocation, SecondArrowLocation);
+                // Set the left and right anchor points for the caption
+                var captionLength = 50; // Length of the caption line for anchoring
+                var halfCaptionLength = captionLength / 2;
+                var leftAnchorPoint = [midPoint[0] - halfCaptionLength, midPoint[1]];
+                var rightAnchorPoint = [midPoint[0] + halfCaptionLength, midPoint[1]];
+                // Add the caption with proper rotation transform
+                MakerJs.model.addCaption(this, captionText || '', leftAnchorPoint, rightAnchorPoint);
+                // Applying transform to rotate the text according to the angle of the line
+                var svgText = document.querySelector('text'); // Assuming there's only one text element
+                if (svgText) {
+                    svgText.setAttribute('transform', "rotate(".concat(angle, ", ").concat(midPoint[0], ", ").concat(midPoint[1], ")"));
+                }
+            }
+            return ArrowLine;
+        }());
+        models.ArrowLine = ArrowLine;
+        ArrowLine.metaParameters = [
+            { title: "First Arrow Location X", type: "range", min: 0, max: 500, value: 100 },
+            { title: "First Arrow Location Y", type: "range", min: 0, max: 500, value: 100 },
+            { title: "Second Arrow Location X", type: "range", min: 0, max: 500, value: 400 },
+            { title: "Second Arrow Location Y", type: "range", min: 0, max: 500, value: 100 },
+            { title: "Arrow Length", type: "range", min: 10, max: 100, value: 20 },
+            { title: "Caption", type: "text", value: "Dimension" }
+        ];
+    })(models = MakerJs.models || (MakerJs.models = {}));
+})(MakerJs || (MakerJs = {}));
+var MakerJs;
+(function (MakerJs) {
+    var models;
+    (function (models) {
+        var SimpleArrow = /** @class */ (function () {
+            function SimpleArrow(arrowLength) {
+                this.paths = {};
+                // Define the arrowhead as two simple lines pointing in the positive X direction
+                this.paths = {
+                    arrowLine1: new MakerJs.paths.Line([0, 0], [arrowLength, -arrowLength / 2]),
+                    arrowLine2: new MakerJs.paths.Line([0, 0], [arrowLength, arrowLength / 2]) // Now points forward
+                };
+            }
+            return SimpleArrow;
+        }());
+        models.SimpleArrow = SimpleArrow;
+        SimpleArrow.metaParameters = [
+            { title: "Length", type: "range", min: 1, max: 100, value: 50 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
