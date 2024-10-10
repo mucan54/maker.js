@@ -8903,7 +8903,8 @@ var MakerJs;
 (function (MakerJs) {
     var dimension;
     (function (dimension) {
-        var ARROW_OFFSET = 20; // The offset distance between the shape and the dimension arrows
+        var ARROW_OFFSET = 5; // The offset distance between the shape and the dimension arrows
+        var dimensionModels = {};
         var defaultLanguageLabels = {
             length: 'Length',
             width: 'Width',
@@ -8921,8 +8922,9 @@ var MakerJs;
             return langObj[labelKey];
         }
         function addArrowLine(model, firstPoint, secondPoint, length, label) {
-            var arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, 5, label);
-            MakerJs.model.addModel(model, arrowLine, "".concat(label, "DimensionLine"));
+            var arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, 3, label);
+            MakerJs.model.addModel(model, arrowLine, 'dimensions');
+            //dimensionModels.models.dimensions[`${label}DimensionLine`] = arrowLine;
         }
         function addRectangleDimension(model, length, width, customLangObj) {
             var extents = MakerJs.measure.modelExtents(model);
@@ -9065,6 +9067,12 @@ var MakerJs;
         // Parse shape type from constructor and apply corresponding dimensions
         function applyDimensions(model, metaParamValues, customLangObj) {
             var modelName = model.constructor.name.toLowerCase();
+            dimensionModels = {};
+            dimensionModels.models = {};
+            dimensionModels.models.dimensions = {};
+            //create a rectangle frame around the model bigger then the model as the frame will be used to display the dimensions
+            var frame = new MakerJs.models.Rectangle(MakerJs.measure.modelExtents(model));
+            //const frame = new MakerJs.models.Rectangle(MakerJs.measure.modelExtents(model));
             switch (modelName) {
                 case 'rectangle':
                     addRectangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
@@ -9099,7 +9107,7 @@ var MakerJs;
                 case 'arrow':
                     addArrowDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], metaParamValues[3], customLangObj);
                     break;
-                case 'halfCircle':
+                case 'halfcircle':
                     addHalfCircleDimension(model, metaParamValues[0], customLangObj);
                     break;
                 case 'quartercircle':
@@ -9135,6 +9143,9 @@ var MakerJs;
                 default:
                     throw new Error("Model type not recognized: ".concat(modelName));
             }
+            //add the model to the frame
+            dimensionModels.models['myframe'] = frame;
+            return dimensionModels;
         }
         dimension.applyDimensions = applyDimensions;
     })(dimension = MakerJs.dimension || (MakerJs.dimension = {}));
@@ -10738,17 +10749,63 @@ var MakerJs;
     var models;
     (function (models) {
         var RoundedRectangle = /** @class */ (function () {
-            function RoundedRectangle(length, width, radius) {
+            /**
+             * Constructor for a RoundedRectangle with individual radii for each corner.
+             * @param length The length of the rectangle.
+             * @param width The width of the rectangle.
+             * @param tlRadius The radius of the top-left corner.
+             * @param trRadius The radius of the top-right corner.
+             * @param brRadius The radius of the bottom-right corner.
+             * @param blRadius The radius of the bottom-left corner.
+             */
+            function RoundedRectangle(length, width, tlRadius, trRadius, brRadius, blRadius) {
                 this.paths = {};
-                this.paths = new models.RoundRectangle(length, width, radius).paths;
+                this.paths = {};
+                // Top-left corner (rounded or sharp)
+                if (tlRadius > 0) {
+                    this.paths['topLeftArc'] = new MakerJs.paths.Arc([tlRadius, tlRadius], tlRadius, 180, 270);
+                }
+                else {
+                    this.paths['topLeft'] = new MakerJs.paths.Line([0, 0], [0, 0]); // Sharp corner at (0, 0)
+                }
+                // Top-right corner (rounded or sharp)
+                if (trRadius > 0) {
+                    this.paths['topRightArc'] = new MakerJs.paths.Arc([length - trRadius, trRadius], trRadius, 270, 360);
+                }
+                else {
+                    this.paths['topRight'] = new MakerJs.paths.Line([length, 0], [length, 0]); // Sharp corner at (length, 0)
+                }
+                // Bottom-right corner (rounded or sharp)
+                if (brRadius > 0) {
+                    this.paths['bottomRightArc'] = new MakerJs.paths.Arc([length - brRadius, width - brRadius], brRadius, 0, 90);
+                }
+                else {
+                    this.paths['bottomRight'] = new MakerJs.paths.Line([length, width], [length, width]); // Sharp corner at (length, width)
+                }
+                // Bottom-left corner (rounded or sharp)
+                if (blRadius > 0) {
+                    this.paths['bottomLeftArc'] = new MakerJs.paths.Arc([blRadius, width - blRadius], blRadius, 90, 180);
+                }
+                else {
+                    this.paths['bottomLeft'] = new MakerJs.paths.Line([0, width], [0, width]); // Sharp corner at (0, width)
+                }
+                // Define straight edges between corners
+                this.paths['topEdge'] = new MakerJs.paths.Line([tlRadius, 0], [length - trRadius, 0]);
+                this.paths['rightEdge'] = new MakerJs.paths.Line([length, trRadius], [length, width - brRadius]);
+                this.paths['bottomEdge'] = new MakerJs.paths.Line([length - brRadius, width], [blRadius, width]);
+                this.paths['leftEdge'] = new MakerJs.paths.Line([0, width - blRadius], [0, tlRadius]);
             }
             return RoundedRectangle;
         }());
         models.RoundedRectangle = RoundedRectangle;
+        // Meta parameters for UI interaction (you can define ranges and default values for radii)
         RoundedRectangle.metaParameters = [
             { title: "Length", type: "range", min: 1, max: 100, value: 50 },
             { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Radius", type: "range", min: 1, max: 20, value: 10 }
+            { title: "Top-Left Radius", type: "range", min: 0, max: 20, value: 10 },
+            { title: "Top-Right Radius", type: "range", min: 0, max: 20, value: 10 },
+            { title: "Bottom-Right Radius", type: "range", min: 0, max: 20, value: 10 },
+            { title: "Bottom-Left Radius", type: "range", min: 0, max: 20, value: 10 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
@@ -10772,7 +10829,7 @@ var MakerJs;
         models.Egg = Egg;
         Egg.metaParameters = [
             { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+            { title: "Height", type: "range", min: 1, max: 100, value: 90 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
@@ -10938,8 +10995,8 @@ var MakerJs;
         models.SlopedRectangle = SlopedRectangle;
         SlopedRectangle.metaParameters = [
             { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Height Left", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Height Right", type: "range", min: 1, max: 100, value: 50 }
+            { title: "Height Left", type: "range", min: 1, max: 100, value: 20 },
+            { title: "Height Right", type: "range", min: 1, max: 100, value: 40 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
@@ -10962,8 +11019,8 @@ var MakerJs;
         models.SlopedRightRectangle = SlopedRightRectangle;
         SlopedRightRectangle.metaParameters = [
             { title: "Width Top", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Width Bottom", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+            { title: "Width Bottom", type: "range", min: 1, max: 100, value: 20 },
+            { title: "Height", type: "range", min: 1, max: 100, value: 40 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
