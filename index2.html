@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape and Dots Configurator</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/bezier-js@2/bezier.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@0/dist/opentype.js"></script>
+
+    <!-- Include Maker.js -->
+    <script src="docs/target/js/browser.maker.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+        }
+        .config-section {
+            flex: 1;
+            padding: 20px;
+            border-right: 2px solid #ccc;
+        }
+        .svg-section {
+            flex: 1;
+            padding: 20px;
+        }
+        .border { border: 1px solid #ccc; }
+        .p-2 { padding: 8px; }
+        .rounded { border-radius: 4px; }
+        .bg-white { background-color: white; }
+        .bg-blue-500 { background-color: #4299e1; }
+        .bg-red-500 { background-color: #f56565; }
+        .bg-green-500 { background-color: #48bb78; }
+        .bg-gray-400 { background-color: #a0aec0; }
+        .text-white { color: white; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .mt-2 { margin-top: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+
+        #svgOutput {
+            background-color: #f1f9ff;
+            border: 2px solid #0091FF;
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            height: 600px;
+        }
+
+        #svgOutput text {
+            fill: black;
+            stroke: none;
+            font-size: 2px;
+            text-shadow: 2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .disabled-button {
+            background-color: #a0aec0 !important;
+            cursor: not-allowed !important;
+        }
+    </style>
+</head>
+<body>
+
+<div x-data="shapeConfigurator()" x-init="init()" class="container">
+    <!-- Configurations Section (Left) -->
+    <div class="config-section">
+        <h1 class="text-2xl mb-4">Shape and Dots Configurator</h1>
+
+        <!-- Main Frame Shape Selection -->
+        <div class="mb-4">
+            <label for="mainShape" class="block">Main Shape</label>
+            <select x-model="mainFrame.shapetype" @change="initializeParameters('mainFrame'); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
+                <option value="">Select Shape</option>
+                <template x-for="shape in availableShapes">
+                    <option :value="shape.code" x-text="shape.name"></option>
+                </template>
+            </select>
+            <div x-show="mainFrame.shapetype">
+                <template x-for="param in getParameters(mainFrame.shapetype, 'shape')">
+                    <div class="mt-2">
+                        <label x-text="param.title"></label>
+                        <input type="number" x-model="mainFrame.shapeParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Overlays Section -->
+        <div class="mb-4">
+            <h2 class="text-xl mb-2">Overlays</h2>
+            <template x-for="(overlay, index) in overlays" :key="index">
+                <div class="mb-2">
+                    <select x-model="overlay.shapetype" @change="initializeParameters('overlays', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
+                        <option value="">Select Shape</option>
+                        <template x-for="shape in availableShapes">
+                            <option :value="shape.code" x-text="shape.name"></option>
+                        </template>
+                    </select>
+
+                    <!-- Position Fields for Overlays -->
+                    <div class="mt-2">
+                        <label>X Position</label>
+                        <input type="number" x-model="overlay.position.x" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                    </div>
+                    <div class="mt-2">
+                        <label>Y Position</label>
+                        <input type="number" x-model="overlay.position.y" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                    </div>
+
+                    <!-- Shape Parameters for Overlays -->
+                    <template x-for="param in getParameters(overlay.shapetype, 'shape')">
+                        <div class="mt-2">
+                            <label x-text="param.title"></label>
+                            <input type="number" x-model="overlay.shapeParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                        </div>
+                    </template>
+                    <button @click="removeOverlay(index)" :class="{'disabled-button': is_finalized}" class="bg-red-500 text-white p-1 rounded ml-2" :disabled="is_finalized">Remove</button>
+                </div>
+            </template>
+            <button @click="addOverlay()" :class="{'disabled-button': is_finalized}" class="bg-blue-500 text-white p-2 rounded" :disabled="is_finalized">Add Overlay</button>
+        </div>
+
+        <!-- Dots Section -->
+        <div class="mb-4">
+            <h2 class="text-xl mb-2">Dots</h2>
+            <template x-for="(dot, index) in dots" :key="index">
+                <div class="mb-2">
+                    <select x-model="dot.dotType" @change="initializeParameters('dots', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
+                        <option value="">Select Dot</option>
+                        <template x-for="dotType in availableDots">
+                            <option :value="dotType.code" x-text="dotType.name"></option>
+                        </template>
+                    </select>
+
+                    <!-- Position Fields for Dots -->
+                    <div class="mt-2">
+                        <label>X Position</label>
+                        <input type="number" x-model="dot.position.x" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                    </div>
+                    <div class="mt-2">
+                        <label>Y Position</label>
+                        <input type="number" x-model="dot.position.y" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                    </div>
+
+                    <!-- Dot Parameters -->
+                    <template x-for="param in getParameters(dot.dotType, 'dot')">
+                        <div class="mt-2">
+                            <label x-text="param.title"></label>
+                            <input type="number" x-model="dot.dotParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                        </div>
+                    </template>
+                    <button @click="removeDot(index)" :class="{'disabled-button': is_finalized}" class="bg-red-500 text-white p-1 rounded ml-2" :disabled="is_finalized">Remove</button>
+                </div>
+            </template>
+            <button @click="addDot()" :class="{'disabled-button': is_finalized}" class="bg-blue-500 text-white p-2 rounded" :disabled="is_finalized">Add Dot</button>
+        </div>
+
+        <!-- Finalize Button -->
+        <div class="mb-4">
+            <button @click="toggleFinalize()" class="bg-green-500 text-white p-2 rounded">
+                <span x-text="is_finalized ? 'Unfinalize' : 'Finalize'"></span>
+            </button>
+        </div>
+
+        <!-- Real-time JSON Output -->
+        <div class="mb-4">
+            <h2 class="text-xl mb-2">JSON Output</h2>
+            <textarea readonly x-model="outputJson" class="border rounded p-2 mt-2 w-full" rows="8"></textarea>
+        </div>
+    </div>
+
+    <!-- SVG Output Section (Right) -->
+    <div class="svg-section">
+        <h2 class="text-xl mb-2">SVG Output</h2>
+        <div style="display: flex; transform: rotate(0deg) scale(1); transition: transform 0.5s; transform-origin: center center;">
+            <div id="svgOutput" style="width: 600px;height: 600px;" class="border rounded p-2 mt-2 bg-white"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var makerjs = require('makerjs');
+
+    function shapeConfigurator() {
+        return {
+            mainFrame: { shapetype: "", shapeParameters: {} },
+            overlays: [], // Initialize overlays array
+            dots: [], // Initialize dots array
+            outputJson: "",
+            availableShapes: [], // initialize as empty array
+            availableDots: [], // initialize as empty array
+            is_finalized: false, // Track finalization state
+
+            // Load shapes and dots on initialization
+            init() {
+                // Load the available shapes and dots
+                this.availableShapes = makerjs.manager.getAllShapes();
+                this.availableDots = makerjs.manager.getAllDots();
+            },
+
+            getParameters(code, type) {
+                const items = type === 'shape' ? this.availableShapes : this.availableDots;
+                return items.find(item => item.code === code)?.parameters || [];
+            },
+
+            modelFetcher(type, parameters, addDimensions = false) {
+                const parametersArray = [];
+                for (const key in parameters) {
+                    parametersArray.push(parseInt(parameters[key]));
+                }
+                console.log(parametersArray);
+
+                var model = makerjs.manager.getModel(type, parametersArray);
+
+                if(addDimensions) {
+                    makerjs.dimension.applyDimensions(model, parametersArray);
+                }
+
+                return model;
+            },
+
+            addOverlay() {
+                this.overlays.push({ shapetype: '', shapeParameters: {}, position: { x: 0, y: 0 } });
+                this.updateConfig();
+            },
+
+            removeOverlay(index) {
+                this.overlays.splice(index, 1);
+                this.updateConfig();
+            },
+
+            addDot() {
+                this.dots.push({ dotType: '', dotParameters: {}, position: { x: 0, y: 0 } });
+                this.updateConfig();
+            },
+
+            removeDot(index) {
+                this.dots.splice(index, 1);
+                this.updateConfig();
+            },
+
+            updateConfig() {
+                this.outputJson = JSON.stringify({
+                    mainFrame: {
+                        shapetype: this.mainFrame.shapetype,
+                        shapeParameters: this.mainFrame.shapeParameters
+                    },
+                    overlays: this.overlays,
+                    dots: this.dots
+                }, null, 2);
+
+                this.renderSvg();
+            },
+
+            initializeParameters(type, index = null) {
+                if (type === 'mainFrame' && this.mainFrame.shapetype) {
+                    this.mainFrame.shapeParameters = {};
+                    this.getParameters(this.mainFrame.shapetype, 'shape').forEach(param => {
+                        this.mainFrame.shapeParameters[param.title] = param.value;
+                    });
+                } else if (type === 'overlays' && index !== null && this.overlays[index].shapetype) {
+                    this.overlays[index].shapeParameters = {};
+                    this.getParameters(this.overlays[index].shapetype, 'shape').forEach(param => {
+                        this.overlays[index].shapeParameters[param.title] = param.value;
+                    });
+
+                    let mainShape = this.modelFetcher(this.mainFrame.shapetype, this.mainFrame.shapeParameters);
+                    const mainShapeExtents = makerjs.measure.modelExtents(mainShape);
+
+                    const mainShapeWidth = mainShapeExtents.high[0] - mainShapeExtents.low[0];
+                    const mainShapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
+
+                    Object.keys(this.overlays[index].shapeParameters).forEach(param => {
+                        if (param.toLowerCase().includes('width')) {
+                            this.overlays[index].shapeParameters[param] = mainShapeWidth / 2;
+                        }
+                        if (param.toLowerCase().includes('height')) {
+                            this.overlays[index].shapeParameters[param] = mainShapeHeight / 2;
+                        }
+                    });
+                    this.overlays[index].position = {
+                        x: 0,
+                        y: 0
+                    };
+
+                } else if (type === 'dots' && index !== null && this.dots[index].dotType) {
+                    this.dots[index].dotParameters = {};
+                    this.getParameters(this.dots[index].dotType, 'dot').forEach(param => {
+                        if(param.title == 'Scale') {param.value = 1;}
+                        this.dots[index].dotParameters[param.title] = param.value;
+                    });
+
+                    this.dots[index].position = {
+                        x: 0,
+                        y: 0
+                    };
+                }
+
+                this.updateConfig();
+            },
+
+            toggleFinalize() {
+                this.is_finalized = !this.is_finalized;
+                this.updateConfig();
+            },
+
+            renderSvg() {
+                const svgContainer = document.getElementById('svgOutput');
+                svgContainer.innerHTML = '';
+
+                const SCALE_FACTOR = 100;
+
+                let mainShape = this.modelFetcher(this.mainFrame.shapetype, this.mainFrame.shapeParameters);
+
+                if (!mainShape) return;
+
+                const mainShapeExtents = makerjs.measure.modelExtents(mainShape);
+                const mainShapeWidth = mainShapeExtents.high[0] - mainShapeExtents.low[0];
+                const mainShapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
+
+                const scale = Math.min(SCALE_FACTOR / mainShapeWidth, SCALE_FACTOR / mainShapeHeight);
+
+                mainShape = makerjs.model.scale(mainShape, scale);
+
+                mainShape = makerjs.model.center(mainShape);
+
+                let overlayShapes = {};
+
+                const mainShapeCenter = {
+                    x: (mainShapeExtents.high[0] + mainShapeExtents.low[0]) / 2,
+                    y: (mainShapeExtents.high[1] + mainShapeExtents.low[1]) / 2,
+                };
+
+                this.overlays.forEach(overlay => {
+                    let overlayShape = this.modelFetcher(overlay.shapetype, overlay.shapeParameters);
+                    if (overlayShape) {
+
+                        const overlayExtents = makerjs.measure.modelExtents(overlayShape);
+                        const overlayCenter = {
+                            x: (overlayExtents.high[0] + overlayExtents.low[0]) / 2,
+                            y: (overlayExtents.high[1] + overlayExtents.low[1]) / 2,
+                        };
+
+                        const positionX = mainShapeCenter.x - (overlayCenter.x - overlay.position.x);
+                        const positionY = mainShapeCenter.y - (overlayCenter.y - overlay.position.y);
+
+                        if(!this.is_finalized) {
+                            overlayShapes = new makerjs.model.combine(
+                                makerjs.model.move(overlayShape, [positionX, positionY]),
+                                overlayShapes,
+                                true,
+                                true,
+                                true,
+                                true
+                            );
+                        } else {
+                            overlayShapes = new makerjs.model.combineUnion(
+                                makerjs.model.move(overlayShape, [positionX, positionY]),
+                                overlayShapes
+                            );
+                        }
+                    }
+                });
+
+                this.dots.forEach(dot => {
+                    let dotShape = this.modelFetcher(dot.dotType, dot.dotParameters);
+                    if (dotShape) {
+                        const dotExtents = makerjs.measure.modelExtents(dotShape);
+                        const dotCenter = {
+                            x: (dotExtents.high[0] + dotExtents.low[0]) / 2,
+                            y: (dotExtents.high[1] + dotExtents.low[1]) / 2,
+                        };
+
+                        const dotPositionX = mainShapeCenter.x - (dotCenter.x - dot.position.x);
+                        const dotPositionY = mainShapeCenter.y - (dotCenter.y - dot.position.y);
+
+                        if(!this.is_finalized) {
+                            overlayShapes = new makerjs.model.combine(
+                                makerjs.model.move(dotShape, [dotPositionX, dotPositionY]),
+                                overlayShapes,
+                                true,
+                                true,
+                                true,
+                                true
+                            );
+                        } else {
+                            overlayShapes = new makerjs.model.combineUnion(
+                                makerjs.model.move(dotShape, [dotPositionX, dotPositionY]),
+                                overlayShapes
+                            );
+                        }
+                    }
+                });
+
+                if(!this.is_finalized) {
+                    mainShape = makerjs.model.combine(mainShape, overlayShapes, true, true, true, true);
+                } else {
+                    mainShape = makerjs.model.combineSubtraction(
+                        mainShape,
+                        overlayShapes
+                    );
+                }
+
+                if (mainShape) {
+                    const options = {};
+
+                    const svg = makerjs.exporter.toSVG(mainShape, options);
+                    svgContainer.innerHTML = svg;
+                }
+            }
+
+        };
+    }
+</script>
+
+</body>
+</html>
