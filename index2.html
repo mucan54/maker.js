@@ -95,39 +95,39 @@
             </div>
         </div>
 
-        <!-- Overlays Section -->
+        <!-- Cutouts Section -->
         <div class="mb-4">
-            <h2 class="text-xl mb-2">Overlays</h2>
-            <template x-for="(overlay, index) in overlays" :key="index">
+            <h2 class="text-xl mb-2">Cutouts</h2>
+            <template x-for="(cutout, index) in cutouts" :key="index">
                 <div class="mb-2">
-                    <select x-model="overlay.shapetype" @change="initializeParameters('overlays', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
+                    <select x-model="cutout.shapetype" @change="initializeParameters('cutouts', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
                         <option value="">Select Shape</option>
                         <template x-for="shape in availableShapes">
                             <option :value="shape.code" x-text="shape.name"></option>
                         </template>
                     </select>
 
-                    <!-- Position Fields for Overlays -->
+                    <!-- Position Fields for Cutouts -->
                     <div class="mt-2">
                         <label>X Position</label>
-                        <input type="number" x-model="overlay.position.x" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                        <input type="number" x-model="cutout.position.x" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                     </div>
                     <div class="mt-2">
                         <label>Y Position</label>
-                        <input type="number" x-model="overlay.position.y" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                        <input type="number" x-model="cutout.position.y" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                     </div>
 
-                    <!-- Shape Parameters for Overlays -->
-                    <template x-for="param in getParameters(overlay.shapetype, 'shape')">
+                    <!-- Shape Parameters for Cutouts -->
+                    <template x-for="param in getParameters(cutout.shapetype, 'shape')">
                         <div class="mt-2">
                             <label x-text="param.title"></label>
-                            <input type="number" x-model="overlay.shapeParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                            <input type="number" x-model="cutout.shapeParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                         </div>
                     </template>
-                    <button @click="removeOverlay(index)" :class="{'disabled-button': is_finalized}" class="bg-red-500 text-white p-1 rounded ml-2" :disabled="is_finalized">Remove</button>
+                    <button @click="removeCutout(index)" :class="{'disabled-button': is_finalized}" class="bg-red-500 text-white p-1 rounded ml-2" :disabled="is_finalized">Remove</button>
                 </div>
             </template>
-            <button @click="addOverlay()" :class="{'disabled-button': is_finalized}" class="bg-blue-500 text-white p-2 rounded" :disabled="is_finalized">Add Overlay</button>
+            <button @click="addCutout()" :class="{'disabled-button': is_finalized}" class="bg-blue-500 text-white p-2 rounded" :disabled="is_finalized">Add Cutout</button>
         </div>
 
         <!-- Dots Section -->
@@ -182,7 +182,7 @@
     <!-- SVG Output Section (Right) -->
     <div class="svg-section">
         <h2 class="text-xl mb-2">SVG Output</h2>
-        <div style="display: flex; transform: rotate(0deg) scale(1); transition: transform 0.5s; transform-origin: center center;">
+        <div style="position: fixed; display: flex; transform: rotate(0deg) scale(1); transition: transform 0.5s; transform-origin: center center;">
             <div id="svgOutput" style="width: 600px;height: 600px;" class="border rounded p-2 mt-2 bg-white"></div>
         </div>
     </div>
@@ -194,7 +194,7 @@
     function shapeConfigurator() {
         return {
             mainFrame: { shapetype: "", shapeParameters: {} },
-            overlays: [], // Initialize overlays array
+            cutouts: [], // Initialize cutouts array
             dots: [], // Initialize dots array
             outputJson: "",
             availableShapes: [], // initialize as empty array
@@ -229,13 +229,13 @@
                 return model;
             },
 
-            addOverlay() {
-                this.overlays.push({ shapetype: '', shapeParameters: {}, position: { x: 0, y: 0 } });
+            addCutout() {
+                this.cutouts.push({ shapetype: '', shapeParameters: {}, position: { x: 0, y: 0 } });
                 this.updateConfig();
             },
 
-            removeOverlay(index) {
-                this.overlays.splice(index, 1);
+            removeCutout(index) {
+                this.cutouts.splice(index, 1);
                 this.updateConfig();
             },
 
@@ -255,7 +255,7 @@
                         shapetype: this.mainFrame.shapetype,
                         shapeParameters: this.mainFrame.shapeParameters
                     },
-                    overlays: this.overlays,
+                    cutouts: this.cutouts,
                     dots: this.dots
                 }, null, 2);
 
@@ -268,30 +268,11 @@
                     this.getParameters(this.mainFrame.shapetype, 'shape').forEach(param => {
                         this.mainFrame.shapeParameters[param.title] = param.value;
                     });
-                } else if (type === 'overlays' && index !== null && this.overlays[index].shapetype) {
-                    this.overlays[index].shapeParameters = {};
-                    this.getParameters(this.overlays[index].shapetype, 'shape').forEach(param => {
-                        this.overlays[index].shapeParameters[param.title] = param.value;
+                } else if (type === 'cutouts' && index !== null && this.cutouts[index].shapetype) {
+                    this.cutouts[index].shapeParameters = {};
+                    this.getParameters(this.cutouts[index].shapetype, 'shape').forEach(param => {
+                        this.cutouts[index].shapeParameters[param.title] = param.value / 2;
                     });
-
-                    let mainShape = this.modelFetcher(this.mainFrame.shapetype, this.mainFrame.shapeParameters);
-                    const mainShapeExtents = makerjs.measure.modelExtents(mainShape);
-
-                    const mainShapeWidth = mainShapeExtents.high[0] - mainShapeExtents.low[0];
-                    const mainShapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
-
-                    Object.keys(this.overlays[index].shapeParameters).forEach(param => {
-                        if (param.toLowerCase().includes('width')) {
-                            this.overlays[index].shapeParameters[param] = mainShapeWidth / 2;
-                        }
-                        if (param.toLowerCase().includes('height')) {
-                            this.overlays[index].shapeParameters[param] = mainShapeHeight / 2;
-                        }
-                    });
-                    this.overlays[index].position = {
-                        x: 0,
-                        y: 0
-                    };
 
                 } else if (type === 'dots' && index !== null && this.dots[index].dotType) {
                     this.dots[index].dotParameters = {};
@@ -318,55 +299,45 @@
                 const svgContainer = document.getElementById('svgOutput');
                 svgContainer.innerHTML = '';
 
-                const SCALE_FACTOR = 100;
-
                 let mainShape = this.modelFetcher(this.mainFrame.shapetype, this.mainFrame.shapeParameters);
 
                 if (!mainShape) return;
 
                 const mainShapeExtents = makerjs.measure.modelExtents(mainShape);
-                const mainShapeWidth = mainShapeExtents.high[0] - mainShapeExtents.low[0];
-                const mainShapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
 
-                const scale = Math.min(SCALE_FACTOR / mainShapeWidth, SCALE_FACTOR / mainShapeHeight);
-
-                mainShape = makerjs.model.scale(mainShape, scale);
-
-                mainShape = makerjs.model.center(mainShape);
-
-                let overlayShapes = {};
+                let cutoutShapes = {};
 
                 const mainShapeCenter = {
                     x: (mainShapeExtents.high[0] + mainShapeExtents.low[0]) / 2,
                     y: (mainShapeExtents.high[1] + mainShapeExtents.low[1]) / 2,
                 };
 
-                this.overlays.forEach(overlay => {
-                    let overlayShape = this.modelFetcher(overlay.shapetype, overlay.shapeParameters);
-                    if (overlayShape) {
+                this.cutouts.forEach(cutout => {
+                    let cutoutShape = this.modelFetcher(cutout.shapetype, cutout.shapeParameters);
+                    if (cutoutShape) {
 
-                        const overlayExtents = makerjs.measure.modelExtents(overlayShape);
-                        const overlayCenter = {
-                            x: (overlayExtents.high[0] + overlayExtents.low[0]) / 2,
-                            y: (overlayExtents.high[1] + overlayExtents.low[1]) / 2,
+                        const cutoutExtents = makerjs.measure.modelExtents(cutoutShape);
+                        const cutoutCenter = {
+                            x: (cutoutExtents.high[0] + cutoutExtents.low[0]) / 2,
+                            y: (cutoutExtents.high[1] + cutoutExtents.low[1]) / 2,
                         };
 
-                        const positionX = mainShapeCenter.x - (overlayCenter.x - overlay.position.x);
-                        const positionY = mainShapeCenter.y - (overlayCenter.y - overlay.position.y);
+                        const positionX = mainShapeCenter.x - (cutoutCenter.x - cutout.position.x);
+                        const positionY = mainShapeCenter.y - (cutoutCenter.y - cutout.position.y);
 
                         if(!this.is_finalized) {
-                            overlayShapes = new makerjs.model.combine(
-                                makerjs.model.move(overlayShape, [positionX, positionY]),
-                                overlayShapes,
+                            cutoutShapes = new makerjs.model.combine(
+                                makerjs.model.move(cutoutShape, [positionX, positionY]),
+                                cutoutShapes,
                                 true,
                                 true,
                                 true,
                                 true
                             );
                         } else {
-                            overlayShapes = new makerjs.model.combineUnion(
-                                makerjs.model.move(overlayShape, [positionX, positionY]),
-                                overlayShapes
+                            cutoutShapes = new makerjs.model.combineUnion(
+                                makerjs.model.move(cutoutShape, [positionX, positionY]),
+                                cutoutShapes
                             );
                         }
                     }
@@ -385,29 +356,29 @@
                         const dotPositionY = mainShapeCenter.y - (dotCenter.y - dot.position.y);
 
                         if(!this.is_finalized) {
-                            overlayShapes = new makerjs.model.combine(
+                            cutoutShapes = new makerjs.model.combine(
                                 makerjs.model.move(dotShape, [dotPositionX, dotPositionY]),
-                                overlayShapes,
+                                cutoutShapes,
                                 true,
                                 true,
                                 true,
                                 true
                             );
                         } else {
-                            overlayShapes = new makerjs.model.combineUnion(
+                            cutoutShapes = new makerjs.model.combineUnion(
                                 makerjs.model.move(dotShape, [dotPositionX, dotPositionY]),
-                                overlayShapes
+                                cutoutShapes
                             );
                         }
                     }
                 });
 
                 if(!this.is_finalized) {
-                    mainShape = makerjs.model.combine(mainShape, overlayShapes, true, true, true, true);
+                    mainShape = makerjs.model.combine(mainShape, cutoutShapes, true, true, true, true);
                 } else {
                     mainShape = makerjs.model.combineSubtraction(
                         mainShape,
-                        overlayShapes
+                        cutoutShapes
                     );
                 }
 
