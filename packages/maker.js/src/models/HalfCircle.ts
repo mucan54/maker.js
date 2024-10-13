@@ -1,6 +1,5 @@
 
 namespace MakerJs.models {
-
     export class HalfCircle implements IModel {
         public paths: IPathMap = {};
 
@@ -15,5 +14,4 @@ namespace MakerJs.models {
     (<IKit>HalfCircle).metaParameters = [
         { title: "Diameter", type: "range", min: 1, max: 100, value: 50 }
     ];
-
 }

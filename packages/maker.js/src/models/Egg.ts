@@ -18,7 +18,7 @@ namespace MakerJs.models {
 
     (<IKit>Egg).metaParameters = [
         { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        { title: "Height", type: "range", min: 1, max: 100, value: 90 }
     ];
 
 }

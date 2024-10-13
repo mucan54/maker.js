@@ -16,8 +16,8 @@ namespace MakerJs.models {
 
     (<IKit>SlopedRectangle).metaParameters = [
         { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height Left", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height Right", type: "range", min: 1, max: 100, value: 50 }
+        { title: "Height Left", type: "range", min: 1, max: 100, value: 20 },
+        { title: "Height Right", type: "range", min: 1, max: 100, value: 40 }
     ];
 
 }

@@ -436,6 +436,7 @@
                 //revert the above
 
                 if (tempKey in b) {
+                    //@ts-ignore
                     b.paths = b[tempKey];
                     delete b[tempKey];
                 }
@@ -444,6 +445,7 @@
                     if (b[tempLayerKey] == undefined) {
                         delete (b as IModel).layer;
                     } else {
+                        //@ts-ignore
                         (b as IModel).layer = b[tempLayerKey];
                     }
                     delete b[tempLayerKey];

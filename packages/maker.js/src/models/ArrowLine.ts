@@ -44,6 +44,7 @@ namespace MakerJs.models {
             const svgText = document.querySelector('text'); // Assuming there's only one text element
             if (svgText) {
                 svgText.setAttribute('transform', `rotate(${angle}, ${midPoint[0]}, ${midPoint[1]})`);
+                svgText.setAttribute('stroke', 'none');
             }
         }
     }
