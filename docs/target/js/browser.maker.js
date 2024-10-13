@@ -8905,6 +8905,7 @@ var MakerJs;
     (function (dimension) {
         var ARROW_OFFSET = 5; // Offset distance between the shape and the dimension arrows
         var dimensionModels = {};
+        var addDimensionsToModel = true;
         var defaultLanguageLabels = {
             length: 'Length',
             width: 'Width',
@@ -8923,7 +8924,10 @@ var MakerJs;
         }
         function addArrowLine(model, firstPoint, secondPoint, label) {
             var arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, 3, label);
-            MakerJs.model.addModel(model, arrowLine, 'dimensions');
+            if (addDimensionsToModel) {
+                MakerJs.model.addModel(model, arrowLine, 'dimensions');
+            }
+            dimensionModels.models[label] = arrowLine;
         }
         // Rectangle
         function addRectangleDimension(model, length, width, customLangObj) {
@@ -9000,10 +9004,19 @@ var MakerJs;
             var right = extents.high[0];
             var bottom = extents.low[1];
             var top = extents.high[1];
+            // Adjusted calculation for stem top and bottom
+            var stemMidHeight = bottom + (stemWidth / 2);
+            var stemBottom = bottom;
+            var stemTop = bottom + stemWidth;
+            var stemBeginHeight = bottom + ((headWidth - stemWidth) / 2);
+            // Stem Length (Horizontal Arrow)
             addArrowLine(model, [left, bottom - ARROW_OFFSET], [left + stemLength, bottom - ARROW_OFFSET], "".concat(getLabelText('stemLength', customLangObj), " - ").concat(stemLength.toFixed(2), " cm"));
+            // Head Length (Horizontal Arrow)
             addArrowLine(model, [left + stemLength, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], "".concat(getLabelText('headLength', customLangObj), " - ").concat(headLength.toFixed(2), " cm"));
+            // Head Width (Vertical Arrow)
             addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], "".concat(getLabelText('headWidth', customLangObj), " - ").concat(headWidth.toFixed(2), " cm"));
-            addArrowLine(model, [left - ARROW_OFFSET, bottom], [left - ARROW_OFFSET, top], "".concat(getLabelText('stemWidth', customLangObj), " - ").concat(stemWidth.toFixed(2), " cm"));
+            // Corrected Stem Width (Vertical Arrow) - align with the mid-section of the stem
+            addArrowLine(model, [left - ARROW_OFFSET, stemBeginHeight], [left - ARROW_OFFSET, stemBeginHeight + stemWidth], "".concat(getLabelText('stemWidth', customLangObj), " - ").concat(stemWidth.toFixed(2), " cm"));
         }
         // Half Circle
         function addHalfCircleDimension(model, diameter, customLangObj) {
@@ -9117,12 +9130,17 @@ var MakerJs;
         }
         // Parse shape type from constructor and apply corresponding dimensions
         function applyDimensions(model, metaParamValues, customLangObj) {
-            var modelName = model.constructor.name.toLowerCase();
+            var _a;
+            //check if model is string or object if string just lowercase it and assign to modelName
+            var modelName = typeof model === 'string' ? model.toLowerCase() : model.constructor.name.toLowerCase();
+            // Create a new model to store the dimensions
+            //@ts-ignore
+            model = typeof model === 'string' ? new ((_a = MakerJs.models[model]).bind.apply(_a, __spreadArray([void 0], metaParamValues, false)))() : model;
             dimensionModels = {};
             dimensionModels.models = {};
             dimensionModels.models.dimensions = {};
             // Create a rectangle frame around the model
-            var frame = new MakerJs.models.Rectangle(MakerJs.measure.modelExtents(model));
+            //const frame = new MakerJs.models.Rectangle(MakerJs.measure.modelExtents(model));
             switch (modelName) {
                 case 'rectangle':
                     addRectangleDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
@@ -9193,7 +9211,7 @@ var MakerJs;
                 default:
                     throw new Error("Model type not recognized: ".concat(modelName));
             }
-            dimensionModels.models['myframe'] = frame;
+            //dimensionModels.models['frame'] = frame;
             return dimensionModels;
         }
         dimension.applyDimensions = applyDimensions;
@@ -10810,38 +10828,38 @@ var MakerJs;
             function RoundedRectangle(length, width, tlRadius, trRadius, brRadius, blRadius) {
                 this.paths = {};
                 this.paths = {};
-                // Top-left corner (rounded or sharp)
+                // Bottom-left corner (rounded or sharp)
                 if (tlRadius > 0) {
-                    this.paths['topLeftArc'] = new MakerJs.paths.Arc([tlRadius, tlRadius], tlRadius, 180, 270);
+                    this.paths['bottomLeftArc'] = new MakerJs.paths.Arc([tlRadius, tlRadius], tlRadius, 180, 270);
                 }
                 else {
-                    this.paths['topLeft'] = new MakerJs.paths.Line([0, 0], [0, 0]); // Sharp corner at (0, 0)
-                }
-                // Top-right corner (rounded or sharp)
-                if (trRadius > 0) {
-                    this.paths['topRightArc'] = new MakerJs.paths.Arc([length - trRadius, trRadius], trRadius, 270, 360);
-                }
-                else {
-                    this.paths['topRight'] = new MakerJs.paths.Line([length, 0], [length, 0]); // Sharp corner at (length, 0)
+                    this.paths['bottomLeft'] = new MakerJs.paths.Line([0, 0], [0, 0]); // Sharp corner at (0, 0)
                 }
                 // Bottom-right corner (rounded or sharp)
+                if (trRadius > 0) {
+                    this.paths['bottomRightArc'] = new MakerJs.paths.Arc([length - trRadius, tlRadius], trRadius, 270, 360);
+                }
+                else {
+                    this.paths['bottomRight'] = new MakerJs.paths.Line([length, 0], [length, 0]); // Sharp corner at (length, 0)
+                }
+                // Top-right corner (rounded or sharp)
                 if (brRadius > 0) {
-                    this.paths['bottomRightArc'] = new MakerJs.paths.Arc([length - brRadius, width - brRadius], brRadius, 0, 90);
+                    this.paths['topRightArc'] = new MakerJs.paths.Arc([length - brRadius, width - brRadius], brRadius, 0, 90);
                 }
                 else {
-                    this.paths['bottomRight'] = new MakerJs.paths.Line([length, width], [length, width]); // Sharp corner at (length, width)
+                    this.paths['topRight'] = new MakerJs.paths.Line([length, width], [length, width]); // Sharp corner at (length, width)
                 }
-                // Bottom-left corner (rounded or sharp)
+                // Top-left corner (rounded or sharp)
                 if (blRadius > 0) {
-                    this.paths['bottomLeftArc'] = new MakerJs.paths.Arc([blRadius, width - blRadius], blRadius, 90, 180);
+                    this.paths['topLeftArc'] = new MakerJs.paths.Arc([blRadius, width - blRadius], blRadius, 90, 180);
                 }
                 else {
-                    this.paths['bottomLeft'] = new MakerJs.paths.Line([0, width], [0, width]); // Sharp corner at (0, width)
+                    this.paths['topLeft'] = new MakerJs.paths.Line([0, width], [0, width]); // Sharp corner at (0, width)
                 }
                 // Define straight edges between corners
-                this.paths['topEdge'] = new MakerJs.paths.Line([tlRadius, 0], [length - trRadius, 0]);
-                this.paths['rightEdge'] = new MakerJs.paths.Line([length, trRadius], [length, width - brRadius]);
-                this.paths['bottomEdge'] = new MakerJs.paths.Line([length - brRadius, width], [blRadius, width]);
+                this.paths['bottomEdge'] = new MakerJs.paths.Line([tlRadius, 0], [length - trRadius, 0]);
+                this.paths['rightEdge'] = new MakerJs.paths.Line([length, tlRadius], [length, width - brRadius]);
+                this.paths['topEdge'] = new MakerJs.paths.Line([length - brRadius, width], [blRadius, width]);
                 this.paths['leftEdge'] = new MakerJs.paths.Line([0, width - blRadius], [0, tlRadius]);
             }
             return RoundedRectangle;
@@ -10851,10 +10869,10 @@ var MakerJs;
         RoundedRectangle.metaParameters = [
             { title: "Length", type: "range", min: 1, max: 100, value: 50 },
             { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Top-Left Radius", type: "range", min: 0, max: 20, value: 10 },
-            { title: "Top-Right Radius", type: "range", min: 0, max: 20, value: 10 },
+            { title: "Bottom-Left Radius", type: "range", min: 0, max: 20, value: 10 },
             { title: "Bottom-Right Radius", type: "range", min: 0, max: 20, value: 10 },
-            { title: "Bottom-Left Radius", type: "range", min: 0, max: 20, value: 10 }
+            { title: "Top-Right Radius", type: "range", min: 0, max: 20, value: 10 },
+            { title: "Top-Left Radius", type: "range", min: 0, max: 20, value: 10 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
@@ -11326,6 +11344,7 @@ var MakerJs;
                 var svgText = document.querySelector('text'); // Assuming there's only one text element
                 if (svgText) {
                     svgText.setAttribute('transform', "rotate(".concat(angle, ", ").concat(midPoint[0], ", ").concat(midPoint[1], ")"));
+                    svgText.setAttribute('stroke', 'none');
                 }
             }
             return ArrowLine;
