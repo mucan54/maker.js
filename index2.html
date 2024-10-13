@@ -98,7 +98,7 @@
                 </template>
                 <div class="mt-2">
                     <label>Show Dimension Arrows</label>
-                    <input checkbox type="checkbox" value="true" x-on:change.debounce="updateConfig()" x-model="mainFrame.showDimensions" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                    <input checkbox type="checkbox" value="true" x-on:change.debounce="updateConfig()" x-model="mainFrame.showDimensions" @input="updateConfig()" class="border rounded p-2 ml-2">
                 </div>
             </div>
         </div>
@@ -134,7 +134,7 @@
                     </template>
                     <div class="mt-2">
                         <label>Show Dimension Arrows</label>
-                        <input checkbox type="checkbox" value="true" x-on:change.debounce="updateConfig()" x-model="cutout.showDimensions" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                        <input checkbox type="checkbox" value="true" x-on:change.debounce="updateConfig()" x-model="cutout.showDimensions" @input="updateConfig()" class="border rounded p-2 ml-2">
                     </div>
                     <button @click="removeCutout(index)" :class="{'disabled-button': is_finalized}" class="bg-red-500 text-white p-1 rounded ml-2" :disabled="is_finalized">Remove</button>
                 </div>
