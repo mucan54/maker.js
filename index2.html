@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:x-on="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -67,6 +67,10 @@
             background-color: #a0aec0 !important;
             cursor: not-allowed !important;
         }
+
+        text {
+            stroke: none !important;
+        }
     </style>
 </head>
 <body>
@@ -92,6 +96,10 @@
                         <input type="number" x-model="mainFrame.shapeParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                     </div>
                 </template>
+                <div class="mt-2">
+                    <label>Show Dimension Arrows</label>
+                    <input checkbox type="checkbox" value="true" x-on:change.debounce="updateConfig()" x-model="mainFrame.showDimensions" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                </div>
             </div>
         </div>
 
@@ -124,6 +132,10 @@
                             <input type="number" x-model="cutout.shapeParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                         </div>
                     </template>
+                    <div class="mt-2">
+                        <label>Show Dimension Arrows</label>
+                        <input checkbox type="checkbox" value="true" x-on:change.debounce="updateConfig()" x-model="cutout.showDimensions" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                    </div>
                     <button @click="removeCutout(index)" :class="{'disabled-button': is_finalized}" class="bg-red-500 text-white p-1 rounded ml-2" :disabled="is_finalized">Remove</button>
                 </div>
             </template>
@@ -175,7 +187,7 @@
         <!-- Real-time JSON Output -->
         <div class="mb-4">
             <h2 class="text-xl mb-2">JSON Output</h2>
-            <textarea readonly x-model="outputJson" class="border rounded p-2 mt-2 w-full" rows="8"></textarea>
+            <textarea x-model="outputJson" x-on:change.debounce="fetchJson()" class="border rounded p-2 mt-2 w-full" rows="8"></textarea>
         </div>
     </div>
 
@@ -193,7 +205,7 @@
 
     function shapeConfigurator() {
         return {
-            mainFrame: { shapetype: "", shapeParameters: {} },
+            mainFrame: { shapetype: "", shapeParameters: {}, showDimensions: true }, // Initialize main frame
             cutouts: [], // Initialize cutouts array
             dots: [], // Initialize dots array
             outputJson: "",
@@ -211,6 +223,15 @@
             getParameters(code, type) {
                 const items = type === 'shape' ? this.availableShapes : this.availableDots;
                 return items.find(item => item.code === code)?.parameters || [];
+            },
+
+            getParamsArray(parameters) {
+                const parametersArray = [];
+                for (const key in parameters) {
+                    parametersArray.push(parseInt(parameters[key]));
+                }
+
+                return parametersArray;
             },
 
             modelFetcher(type, parameters, addDimensions = false) {
@@ -249,11 +270,22 @@
                 this.updateConfig();
             },
 
+            fetchJson() {
+                jsonData = JSON.parse(this.outputJson);
+                this.mainFrame.shapetype = jsonData.mainFrame.shapetype;
+                this.mainFrame.shapeParameters = jsonData.mainFrame.shapeParameters;
+                this.mainFrame.showDimensions = jsonData.mainFrame.showDimensions;
+                this.cutouts = jsonData.cutouts;
+                this.dots = jsonData.dots;
+                this.renderSvg();
+            },
+
             updateConfig() {
                 this.outputJson = JSON.stringify({
                     mainFrame: {
                         shapetype: this.mainFrame.shapetype,
-                        shapeParameters: this.mainFrame.shapeParameters
+                        shapeParameters: this.mainFrame.shapeParameters,
+                        showDimensions: this.mainFrame.showDimensions
                     },
                     cutouts: this.cutouts,
                     dots: this.dots
@@ -296,6 +328,8 @@
             },
 
             renderSvg() {
+                console.log(this.mainFrame);
+                console.log(this.cutouts);
                 const svgContainer = document.getElementById('svgOutput');
                 svgContainer.innerHTML = '';
 
@@ -312,6 +346,9 @@
                     y: (mainShapeExtents.high[1] + mainShapeExtents.low[1]) / 2,
                 };
 
+                var allCutouts = {};
+                var cutoutDimensions = {};
+                var index = 0;
                 this.cutouts.forEach(cutout => {
                     let cutoutShape = this.modelFetcher(cutout.shapetype, cutout.shapeParameters);
                     if (cutoutShape) {
@@ -325,6 +362,8 @@
                         const positionX = mainShapeCenter.x - (cutoutCenter.x - cutout.position.x);
                         const positionY = mainShapeCenter.y - (cutoutCenter.y - cutout.position.y);
 
+                        allCutouts[cutout.shapetype] = makerjs.model.move(cutoutShape, [positionX, positionY]);
+                        cutoutShape.layer = "red";
                         if(!this.is_finalized) {
                             cutoutShapes = new makerjs.model.combine(
                                 makerjs.model.move(cutoutShape, [positionX, positionY]),
@@ -339,6 +378,13 @@
                                 makerjs.model.move(cutoutShape, [positionX, positionY]),
                                 cutoutShapes
                             );
+                        }
+
+                        if(cutout.showDimensions) {
+                            var dimension = makerjs.dimension.applyDimensions(cutout.shapetype, this.getParamsArray(cutout.shapeParameters));
+                            dimension.layer = "red";
+                            cutoutDimensions[cutout.shapetype+index] = makerjs.model.move(dimension, [positionX, positionY]);
+                            index++;
                         }
                     }
                 });
@@ -355,6 +401,7 @@
                         const dotPositionX = mainShapeCenter.x - (dotCenter.x - dot.position.x);
                         const dotPositionY = mainShapeCenter.y - (dotCenter.y - dot.position.y);
 
+                        dotShape.layer = "red";
                         if(!this.is_finalized) {
                             cutoutShapes = new makerjs.model.combine(
                                 makerjs.model.move(dotShape, [dotPositionX, dotPositionY]),
@@ -382,8 +429,23 @@
                     );
                 }
 
+                //makerjs.dimension.dimensionAddtoModel = false;
+                if(this.mainFrame.showDimensions) {
+                    var dimensions = makerjs.dimension.applyDimensions(this.mainFrame.shapetype, this.getParamsArray(this.mainFrame.shapeParameters));
+                    console.log(dimensions);
+                    makerjs.model.addModel(mainShape, dimensions, 'dimensions');
+                }
+
+                if(cutoutDimensions) {
+                    for (const [key, value] of Object.entries(cutoutDimensions)) {
+                        makerjs.model.addModel(mainShape, value, 'cutout_dimensions');
+                    }
+                }
+
                 if (mainShape) {
                     const options = {};
+                    options.strokeWidth = 3;
+                    options.annotate = false;
 
                     const svg = makerjs.exporter.toSVG(mainShape, options);
                     svgContainer.innerHTML = svg;
