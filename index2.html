@@ -10,7 +10,12 @@
 
     <!-- Include Maker.js -->
     <script src="docs/target/js/browser.maker.js"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Alpine Plugins -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Alpine Core -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
         .container {
@@ -86,7 +91,7 @@
             <select x-model="mainFrame.shapetype" @change="initializeParameters('mainFrame'); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
                 <option value="">Select Shape</option>
                 <template x-for="shape in availableShapes">
-                    <option :value="shape.code" x-text="shape.name"></option>
+                    <option :value="shape.code" x-text="shape.name" :selected="shape.code == mainFrame.shapetype"></option>
                 </template>
             </select>
             <div x-show="mainFrame.shapetype">
@@ -111,7 +116,7 @@
                     <select x-model="cutout.shapetype" @change="initializeParameters('cutouts', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
                         <option value="">Select Shape</option>
                         <template x-for="shape in availableShapes">
-                            <option :value="shape.code" x-text="shape.name"></option>
+                            <option :value="shape.code" x-text="shape.name" :selected="shape.code == cutout.shapetype"></option>
                         </template>
                     </select>
 
@@ -150,7 +155,7 @@
                     <select x-model="dot.dotType" @change="initializeParameters('dots', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
                         <option value="">Select Dot</option>
                         <template x-for="dotType in availableDots">
-                            <option :value="dotType.code" x-text="dotType.name"></option>
+                            <option :value="dotType.code" x-text="dotType.name" :selected="dotType.code == dot.dotType"></option>
                         </template>
                     </select>
 
@@ -181,6 +186,13 @@
         <div class="mb-4">
             <button @click="toggleFinalize()" class="bg-green-500 text-white p-2 rounded">
                 <span x-text="is_finalized ? 'Unfinalize' : 'Finalize'"></span>
+            </button>
+        </div>
+
+        <!-- Cleanup Button -->
+        <div class="mb-4">
+            <button @click="cleanup()" class="bg-red-500 text-white p-2 rounded">
+                Cleanup (Clear Local Storage and Reset)
             </button>
         </div>
 
@@ -218,6 +230,17 @@
                 // Load the available shapes and dots
                 this.availableShapes = makerjs.manager.getAllShapes();
                 this.availableDots = makerjs.manager.getAllDots();
+
+                let localStorageData = localStorage.getItem('shapeConfigurator');
+
+                if(localStorageData) {
+                    let data = JSON.parse(localStorageData);
+                    this.mainFrame = data.mainFrame;
+                    this.cutouts = data.cutouts;
+                    this.dots = data.dots;
+                    this.is_finalized = data.is_finalized;
+                    this.updateConfig();
+                }
             },
 
             getParameters(code, type) {
@@ -264,6 +287,19 @@
                 this.dots.push({ dotType: '', dotParameters: {}, position: { x: 0, y: 0 } });
                 this.updateConfig();
             },
+            cleanup() {
+                //ask for confirmation
+                if (!confirm("Are you sure you want to reset the configurator?")) {
+                    return;
+                }
+                // Clear persisted state and reset settings
+                localStorage.clear();
+                this.mainFrame = { shapetype: "", shapeParameters: {} };
+                this.cutouts = [];
+                this.dots = [];
+                this.is_finalized = false;
+                this.updateConfig();
+            },
 
             removeDot(index) {
                 this.dots.splice(index, 1);
@@ -282,14 +318,17 @@
 
             updateConfig() {
                 this.outputJson = JSON.stringify({
-                    mainFrame: {
-                        shapetype: this.mainFrame.shapetype,
-                        shapeParameters: this.mainFrame.shapeParameters,
-                        showDimensions: this.mainFrame.showDimensions
-                    },
+                    mainFrame: this.mainFrame,
                     cutouts: this.cutouts,
                     dots: this.dots
                 }, null, 2);
+
+                localStorage.setItem('shapeConfigurator', JSON.stringify({
+                    mainFrame: this.mainFrame,
+                    cutouts: this.cutouts,
+                    dots: this.dots,
+                    is_finalized: this.is_finalized
+                }));
 
                 this.renderSvg();
             },
@@ -333,7 +372,7 @@
                 const svgContainer = document.getElementById('svgOutput');
                 svgContainer.innerHTML = '';
 
-                let mainShape = this.modelFetcher(this.mainFrame.shapetype, this.mainFrame.shapeParameters);
+                let mainShape = makerjs.manager.getModel(this.mainFrame.shapetype, this.mainFrame.shapeParameters);
 
                 if (!mainShape) return;
 
@@ -350,7 +389,7 @@
                 var cutoutDimensions = {};
                 var index = 0;
                 this.cutouts.forEach(cutout => {
-                    let cutoutShape = this.modelFetcher(cutout.shapetype, cutout.shapeParameters);
+                    let cutoutShape = makerjs.manager.getModel(cutout.shapetype, cutout.shapeParameters);
                     if (cutoutShape) {
 
                         const cutoutExtents = makerjs.measure.modelExtents(cutoutShape);
@@ -390,7 +429,7 @@
                 });
 
                 this.dots.forEach(dot => {
-                    let dotShape = this.modelFetcher(dot.dotType, dot.dotParameters);
+                    let dotShape = makerjs.manager.getModel(dot.dotType, dot.dotParameters);
                     if (dotShape) {
                         const dotExtents = makerjs.measure.modelExtents(dotShape);
                         const dotCenter = {
