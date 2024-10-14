@@ -8811,6 +8811,7 @@ var MakerJs;
 (function (MakerJs) {
     var manager;
     (function (manager) {
+        var managerMainModel = null;
         var allAvailableShapes = [
             "Rectangle",
             "Circle",
@@ -8840,6 +8841,10 @@ var MakerJs;
             "EdgeDots",
             "CustomDot"
         ];
+        var mainShapeRequiredModels = [
+            "CornerDots",
+            "EdgeDots"
+        ];
         function getAllModels() {
             var shapeNames = allAvailableShapes;
             var shapes = {};
@@ -8863,10 +8868,19 @@ var MakerJs;
             name = name.replace(/ /g, '');
             // Check if model exists
             if (models[name]) {
-                // Ensure parameters is an array
-                var modelArgs = Array.isArray(parameters) ? parameters : Array.from(parameters);
+                if (typeof parameters === 'object') {
+                    var parametersArray = [];
+                    for (var key in parameters) {
+                        parametersArray.push(parseInt(parameters[key]));
+                    }
+                    parameters = parametersArray;
+                }
+                else {
+                    parameters = Array.from(parameters);
+                }
+                parameters = checkMainModelRequired(name, parameters);
                 // @ts-ignore
-                modelDefinition = new ((_a = MakerJs.models[name]).bind.apply(_a, __spreadArray([void 0], modelArgs, false)))();
+                modelDefinition = new ((_a = MakerJs.models[name]).bind.apply(_a, __spreadArray([void 0], parameters, false)))();
             }
             if (!modelDefinition) {
                 console.error("Model ".concat(name, " not found."));
@@ -8875,6 +8889,30 @@ var MakerJs;
             return modelDefinition;
         }
         manager.getModel = getModel;
+        function checkMainModelRequired(name, parameters) {
+            if (mainShapeRequiredModels.includes(name)) {
+                if (!managerMainModel) {
+                    console.error("Main model is required for ".concat(name));
+                    return null;
+                }
+                parameters = __spreadArray([managerMainModel], parameters, true);
+            }
+            return parameters;
+        }
+        function fetchMainModel(name, parameters) {
+            var mainModel = getModel(name, parameters);
+            managerMainModel = mainModel;
+            return mainModel;
+        }
+        manager.fetchMainModel = fetchMainModel;
+        function setMainModel(mainModel) {
+            managerMainModel = mainModel;
+        }
+        manager.setMainModel = setMainModel;
+        function getMainModel() {
+            return managerMainModel;
+        }
+        manager.getMainModel = getMainModel;
         function getAllShapes() {
             var allShapes = getAllModels();
             var shapesWithoutDot = [];
@@ -8923,6 +8961,7 @@ var MakerJs;
             return langObj[labelKey];
         }
         function addArrowLine(model, firstPoint, secondPoint, label) {
+            var bestArrowLength = Math.min(3, MakerJs.measure.pointDistance(firstPoint, secondPoint) / 4);
             var arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, 3, label);
             if (addDimensionsToModel) {
                 MakerJs.model.addModel(model, arrowLine, 'dimensions');
@@ -9115,8 +9154,10 @@ var MakerJs;
             var right = extents.high[0];
             var bottom = extents.low[1];
             var top = extents.high[1];
-            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], "".concat(getLabelText('width', customLangObj), " - ").concat(width.toFixed(2), " cm"));
-            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], "".concat(getLabelText('height', customLangObj), " - ").concat(height.toFixed(2), " cm"));
+            var calculatedWidht = right - left;
+            var calculatedHeight = top - bottom;
+            addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], "".concat(getLabelText('width', customLangObj), " - ").concat(calculatedWidht.toFixed(2), " cm"));
+            addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], "".concat(getLabelText('height', customLangObj), " - ").concat(calculatedHeight.toFixed(2), " cm"));
         }
         // Kite
         function addKiteDimension(model, width, heightTop, heightBottom, customLangObj) {
@@ -11231,25 +11272,72 @@ var MakerJs;
     var models;
     (function (models) {
         var CornerDots = /** @class */ (function () {
-            function CornerDots(rectWidth, rectHeight, dotDistance, scale) {
+            function CornerDots(mainModel, dotDiameter, offset) {
                 this.paths = {};
-                var scaledWidth = rectWidth * scale;
-                var scaledHeight = rectHeight * scale;
-                var scaledDotDistance = dotDistance * scale;
-                // Add dots to each corner
-                this.paths["topLeft"] = new MakerJs.paths.Circle([scaledDotDistance, scaledDotDistance], (1.4 / 2) * scale);
-                this.paths["topRight"] = new MakerJs.paths.Circle([scaledWidth - scaledDotDistance, scaledDotDistance], (1.4 / 2) * scale);
-                this.paths["bottomLeft"] = new MakerJs.paths.Circle([scaledDotDistance, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
-                this.paths["bottomRight"] = new MakerJs.paths.Circle([scaledWidth - scaledDotDistance, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
+                // Get the ordered corner points of the outer shape (main model)
+                var cornerPoints = this.getOrderedCornerPoints(mainModel);
+                // Create the inner shape by offsetting the corners inward
+                var innerCornerPoints = this.createInnerShape(cornerPoints, offset);
+                // Place dots at the internal corners (corners of the inner shape)
+                for (var i = 0; i < innerCornerPoints.length; i++) {
+                    var innerCorner = innerCornerPoints[i];
+                    // Create a circle (dot) at the inner corner with the specified diameter
+                    this.paths["cornerDot".concat(i)] = new MakerJs.paths.Circle(innerCorner, dotDiameter / 2);
+                }
             }
+            /**
+             * Offset the outer shape's corner points to create an inner shape
+             */
+            CornerDots.prototype.createInnerShape = function (cornerPoints, offset) {
+                var innerPoints = [];
+                // Loop through each corner and move it inward by the offset
+                for (var i = 0; i < cornerPoints.length; i++) {
+                    var curr = cornerPoints[i];
+                    var prev = cornerPoints[(i - 1 + cornerPoints.length) % cornerPoints.length];
+                    var next = cornerPoints[(i + 1) % cornerPoints.length];
+                    // Calculate the vector from the current corner to the previous and next corner
+                    var vectorToPrev = [prev[0] - curr[0], prev[1] - curr[1]];
+                    var vectorToNext = [next[0] - curr[0], next[1] - curr[1]];
+                    // Normalize the vectors
+                    var magPrev = MakerJs.measure.pointDistance(curr, prev);
+                    var magNext = MakerJs.measure.pointDistance(curr, next);
+                    var normalizedPrev = [vectorToPrev[0] / magPrev, vectorToPrev[1] / magPrev];
+                    var normalizedNext = [vectorToNext[0] / magNext, vectorToNext[1] / magNext];
+                    // Move the point inward along both vectors
+                    var offsetX = (normalizedPrev[0] + normalizedNext[0]) * offset;
+                    var offsetY = (normalizedPrev[1] + normalizedNext[1]) * offset;
+                    innerPoints.push([curr[0] + offsetX, curr[1] + offsetY]);
+                }
+                return innerPoints;
+            };
+            /**
+             * Helper method to extract ordered corner points from the main model
+             */
+            CornerDots.prototype.getOrderedCornerPoints = function (model) {
+                var points = [];
+                // Use MakerJs function to find the chain and extract corner points
+                var chain = MakerJs.model.findChains(model)[0];
+                if (chain) {
+                    var chainLinks = chain.links;
+                    for (var _i = 0, chainLinks_1 = chainLinks; _i < chainLinks_1.length; _i++) {
+                        var link = chainLinks_1[_i];
+                        var line = link.walkedPath.pathContext;
+                        if (link.reversed) {
+                            points.push(line.end);
+                        }
+                        else {
+                            points.push(line.origin);
+                        }
+                    }
+                }
+                return points;
+            };
             return CornerDots;
         }());
         models.CornerDots = CornerDots;
         CornerDots.metaParameters = [
-            { title: "Rectangle Width", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Rectangle Height", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Dot Distance", type: "range", min: 1, max: 20, value: 3.2 },
-            { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
+            { title: "Dot Diameter", type: "range", min: 1, max: 10, value: 1.4 },
+            { title: "Offset", type: "range", min: 1, max: 50, value: 5 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
@@ -11258,25 +11346,47 @@ var MakerJs;
     var models;
     (function (models) {
         var EdgeDots = /** @class */ (function () {
-            function EdgeDots(rectWidth, rectHeight, dotDistance, scale) {
+            function EdgeDots(mainModel, dotDistance, dotDiameter) {
+                var _this = this;
                 this.paths = {};
-                var scaledWidth = rectWidth * scale;
-                var scaledHeight = rectHeight * scale;
-                var scaledDotDistance = dotDistance * scale;
-                // Add dots to each edge
-                this.paths["leftEdge"] = new MakerJs.paths.Circle([scaledDotDistance, scaledHeight / 2], (1.4 / 2) * scale);
-                this.paths["rightEdge"] = new MakerJs.paths.Circle([scaledWidth - scaledDotDistance, scaledHeight / 2], (1.4 / 2) * scale);
-                this.paths["topEdge"] = new MakerJs.paths.Circle([scaledWidth / 2, scaledDotDistance], (1.4 / 2) * scale);
-                this.paths["bottomEdge"] = new MakerJs.paths.Circle([scaledWidth / 2, scaledHeight - scaledDotDistance], (1.4 / 2) * scale);
+                // Get the edge points of the model
+                var edgePoints = this.getEdgePoints(mainModel, dotDistance);
+                // Place a dot at each edge
+                edgePoints.forEach(function (point, index) {
+                    var dotX = point[0];
+                    var dotY = point[1];
+                    // Create a circle (dot) at each edge point with the specified diameter
+                    _this.paths["edge".concat(index)] = new MakerJs.paths.Circle([dotX, dotY], dotDiameter / 2);
+                });
             }
+            /**
+             * Helper method to extract midpoints of edges from the main model
+             */
+            EdgeDots.prototype.getEdgePoints = function (model, dotDistance) {
+                var points = [];
+                // Loop through paths in the model and extract the edge midpoints
+                for (var pathId in model.paths) {
+                    var path_2 = model.paths[pathId];
+                    // If the path is a line, we can calculate the midpoint of the edge
+                    if (path_2.type === "line") {
+                        var line = path_2;
+                        var midX = (line.origin[0] + line.end[0]) / 2;
+                        var midY = (line.origin[1] + line.end[1]) / 2;
+                        // Add a point that is dotDistance away from the edge midpoint
+                        points.push([midX, midY]);
+                    }
+                    // For other path types, you can implement logic to extract key points
+                    // such as for arcs, curves, etc.
+                }
+                // Return edge points
+                return points;
+            };
             return EdgeDots;
         }());
         models.EdgeDots = EdgeDots;
         EdgeDots.metaParameters = [
-            { title: "Rectangle Width", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Rectangle Height", type: "range", min: 1, max: 100, value: 50 },
             { title: "Dot Distance", type: "range", min: 1, max: 20, value: 3.2 },
-            { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
+            { title: "Dot Diameter", type: "range", min: 1, max: 10, value: 1.4 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
