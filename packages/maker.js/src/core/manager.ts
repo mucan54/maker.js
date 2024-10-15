@@ -1,5 +1,7 @@
 namespace MakerJs.manager {
 
+    var managerMainModel: MakerJs.IModel = null;
+
     const allAvailableShapes = [
         "Rectangle",
         "Circle",
@@ -30,6 +32,11 @@ namespace MakerJs.manager {
         "CustomDot"
     ];
 
+    const mainShapeRequiredModels = [
+        "CornerDots",
+        "EdgeDots"
+    ];
+
     export function getAllModels(): any {
         const shapeNames = allAvailableShapes;
         const shapes = {};
@@ -55,11 +62,20 @@ namespace MakerJs.manager {
 
         // Check if model exists
         if (models[name]) {
-            // Ensure parameters is an array
-            const modelArgs = Array.isArray(parameters) ? parameters : Array.from(parameters);
+             if(typeof parameters === 'object'){
+                const parametersArray = [];
+                for (const key in parameters) {
+                    parametersArray.push(parseInt(parameters[key]));
+                }
+                parameters = parametersArray;
+             } else {
+                parameters = Array.from(parameters);
+             }
+
+            parameters = checkMainModelRequired(name, parameters);
 
             // @ts-ignore
-            modelDefinition = new (MakerJs.models[name] as any)(...modelArgs);
+            modelDefinition = new (MakerJs.models[name] as any)(...parameters);
         }
 
         if (!modelDefinition) {
@@ -68,6 +84,33 @@ namespace MakerJs.manager {
         }
 
         return modelDefinition;
+    }
+
+    function checkMainModelRequired(name: string, parameters: any[]): any[] {
+        if (mainShapeRequiredModels.includes(name)) {
+            if(!managerMainModel){
+                console.error(`Main model is required for ${name}`);
+                return null;
+            }
+
+            parameters = [managerMainModel, ...parameters];
+        }
+
+        return parameters;
+    }
+
+    export function fetchMainModel(name: string, parameters: any[]): any {
+        let mainModel = getModel(name, parameters);
+        managerMainModel = mainModel;
+        return mainModel;
+    }
+
+    export function setMainModel(mainModel: any): void {
+        managerMainModel = mainModel;
+    }
+
+    export function getMainModel(): any {
+        return managerMainModel;
     }
 
     export function getAllShapes(): any {
