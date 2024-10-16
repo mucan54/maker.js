@@ -11275,81 +11275,71 @@ var MakerJs;
             function CornerDots(mainModel, dotDiameter, offset) {
                 var _this = this;
                 this.paths = {};
-                // Calculate the true center of the shape
-                var center = this.calculateShapeCenter(mainModel);
-                // Find the corner points and move them toward the center
-                var cornerPoints = this.getOffsetCornerPoints(mainModel, center, offset);
+                // Validate the input parameters
+                if (offset <= 0)
+                    offset = 1;
+                if (dotDiameter <= 0)
+                    dotDiameter = 1;
+                // Find the corner points and move them toward the calculated midpoint of opposite lines
+                var cornerPoints = this.getOffsetCornerPoints(mainModel, offset);
                 // Add dots at the offset corner points
                 cornerPoints.forEach(function (cornerPoint, index) {
                     var dot = _this.drawDotAtPoint(cornerPoint, dotDiameter);
                     _this.paths["dot_".concat(index)] = dot;
                 });
             }
-            // Calculate the true center of the shape by averaging the midpoints of all lines
-            CornerDots.prototype.calculateShapeCenter = function (model) {
-                var midPoints = [];
-                // Find the midpoint of each line in the shape
+            // Get the offset corner points by calculating the midpoint of lines connecting opposite edge midpoints
+            CornerDots.prototype.getOffsetCornerPoints = function (model, offset) {
+                var points = [];
+                // Collect all corner points from the model
+                var lines = this.getLinesFromModel(model);
+                // Process each line to find opposite line midpoints
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i];
+                    // Find the midpoints of adjacent lines
+                    var currentMidpoint = MakerJs.point.middle(line);
+                    var nextLine = lines[(i + 1) % lines.length];
+                    var nextMidpoint = MakerJs.point.middle(nextLine);
+                    // Calculate the center between the two midpoints using our custom function
+                    var centerBetweenMidpoints = this.calculateMidpointBetweenTwoPoints(currentMidpoint, nextMidpoint);
+                    // Move the corner towards the center between midpoints by offset
+                    var offsetCornerPoint = this.movePointTowards(currentMidpoint, centerBetweenMidpoints, offset);
+                    points.push(offsetCornerPoint);
+                }
+                return points;
+            };
+            // Custom function to calculate the midpoint between two points
+            CornerDots.prototype.calculateMidpointBetweenTwoPoints = function (pointA, pointB) {
+                var midX = (pointA[0] + pointB[0]) / 2;
+                var midY = (pointA[1] + pointB[1]) / 2;
+                return [midX, midY]; // Return the midpoint between the two points
+            };
+            // Extract lines from the model
+            CornerDots.prototype.getLinesFromModel = function (model) {
+                var lines = [];
                 for (var pathId in model.paths) {
                     var path_2 = model.paths[pathId];
                     if (path_2.type === MakerJs.pathType.Line) {
-                        var line = path_2;
-                        var midPoint = MakerJs.point.middle(line);
-                        midPoints.push(midPoint);
+                        lines.push(path_2);
                     }
                 }
-                // Calculate the average of all midpoints to find the center
-                var sum = midPoints.reduce(function (acc, point) {
-                    return [acc[0] + point[0], acc[1] + point[1]];
-                }, [0, 0]);
-                var centerX = sum[0] / midPoints.length;
-                var centerY = sum[1] / midPoints.length;
-                return [centerX, centerY]; // Return the true center of the shape
+                return lines;
             };
-            // Calculate the corner points and move them toward the center based on the offset
-            CornerDots.prototype.getOffsetCornerPoints = function (model, center, offset) {
-                var points = [];
-                // Collect all corner points from the model
-                for (var pathId in model.paths) {
-                    var path_3 = model.paths[pathId];
-                    if (path_3.type === MakerJs.pathType.Line) {
-                        var line = path_3;
-                        points.push(line.origin, line.end);
-                    }
-                }
-                // Remove duplicate points
-                var uniquePoints = this.removeDuplicatePoints(points);
-                // Move the points toward the center
-                return this.movePointsTowardCenter(uniquePoints, center, offset);
-            };
-            // Remove duplicate points to avoid redundant calculations
-            CornerDots.prototype.removeDuplicatePoints = function (points) {
-                var _this = this;
-                return points.filter(function (point, index, self) {
-                    return index === self.findIndex(function (p) {
-                        return _this.arePointsEqual(p, point);
-                    });
-                });
-            };
-            // Check if two points are equal
-            CornerDots.prototype.arePointsEqual = function (point1, point2) {
-                return point1[0] === point2[0] && point1[1] === point2[1];
-            };
-            // Move points toward the center by the given offset
-            CornerDots.prototype.movePointsTowardCenter = function (points, center, offset) {
-                return points.map(function (point) {
-                    // Calculate the distance from the point to the center
-                    var distanceToCenter = MakerJs.measure.pointDistance(point, center);
-                    // If the distance is very small, do not move the point
-                    if (distanceToCenter === 0) {
-                        return point;
-                    }
-                    // Scale the movement based on the distance and offset
-                    var scale = (distanceToCenter - offset) / distanceToCenter;
-                    // Move the point toward the center using the scaled values
-                    var newX = point[0] + (center[0] - point[0]) * (1 - scale);
-                    var newY = point[1] + (center[1] - point[1]) * (1 - scale);
-                    return [newX, newY];
-                });
+            // Move point toward the target by the offset
+            CornerDots.prototype.movePointTowards = function (point, target, offset) {
+                // Calculate the vector from the point to the target
+                var vectorToTarget = MakerJs.point.subtract(target, point);
+                // Calculate the length of the vector (distance to target)
+                var distanceToTarget = MakerJs.measure.pointDistance(point, target);
+                // If the distance is zero, do nothing
+                if (distanceToTarget === 0)
+                    return point;
+                // Calculate the scaling factor to move the point toward the target by the offset
+                var scale = offset / distanceToTarget;
+                // Move the point proportionally along both axes
+                var newX = point[0] + (vectorToTarget[0] * scale);
+                var newY = point[1] + (vectorToTarget[1] * scale);
+                return [newX, newY];
             };
             // Draw a dot (circle) at the specified point
             CornerDots.prototype.drawDotAtPoint = function (center, diameter) {
@@ -11371,47 +11361,94 @@ var MakerJs;
     var models;
     (function (models) {
         var EdgeDots = /** @class */ (function () {
-            function EdgeDots(mainModel, dotDistance, dotDiameter) {
-                var _this = this;
+            function EdgeDots(mainModel, dotDiameter, minOffset) {
                 this.paths = {};
-                // Get the edge points of the model
-                var edgePoints = this.getEdgePoints(mainModel, dotDistance);
-                // Place a dot at each edge
-                edgePoints.forEach(function (point, index) {
-                    var dotX = point[0];
-                    var dotY = point[1];
-                    // Create a circle (dot) at each edge point with the specified diameter
-                    _this.paths["edge".concat(index)] = new MakerJs.paths.Circle([dotX, dotY], dotDiameter / 2);
-                });
+                // Get the ordered corner points of the model
+                if (minOffset <= 0)
+                    minOffset = 1;
+                if (dotDiameter <= 0)
+                    dotDiameter = 1;
+                var cornerPoints = this.getOrderedCornerPoints(mainModel);
+                // For each edge, calculate the midpoint and place a dot
+                for (var i = 0; i < cornerPoints.length; i++) {
+                    var curr = cornerPoints[i];
+                    var next = cornerPoints[(i + 1) % cornerPoints.length];
+                    // Calculate the midpoint between the current and next points
+                    var midpoint = this.calculateMidpoint(curr, next);
+                    // Optionally move the midpoint inwards if a minOffset is provided
+                    var adjustedMidpoint = this.adjustPointTowardsCentroid(midpoint, mainModel, minOffset);
+                    // Ensure the adjusted point is still inside the shape
+                    if (MakerJs.measure.isPointInsideModel(adjustedMidpoint, mainModel)) {
+                        // Create a circle (dot) at the adjusted midpoint with the specified diameter
+                        this.paths["edge".concat(i)] = new MakerJs.paths.Circle(adjustedMidpoint, dotDiameter / 2);
+                    }
+                }
             }
             /**
-             * Helper method to extract midpoints of edges from the main model
+             * Calculate the midpoint between two points
              */
-            EdgeDots.prototype.getEdgePoints = function (model, dotDistance) {
+            EdgeDots.prototype.calculateMidpoint = function (point1, point2) {
+                return [
+                    (point1[0] + point2[0]) / 2,
+                    (point1[1] + point2[1]) / 2
+                ];
+            };
+            /**
+             * Adjust the point towards the centroid by a specified offset
+             */
+            EdgeDots.prototype.adjustPointTowardsCentroid = function (midpoint, model, minOffset) {
+                // Calculate the centroid of the model (average of all corner points)
+                var cornerPoints = this.getOrderedCornerPoints(model);
+                var centroid = this.calculateCentroid(cornerPoints);
+                var vectorToCentroid = [centroid[0] - midpoint[0], centroid[1] - midpoint[1]];
+                var magToCentroid = MakerJs.measure.pointDistance(midpoint, centroid);
+                var normalizedVector = [vectorToCentroid[0] / magToCentroid, vectorToCentroid[1] / magToCentroid];
+                var offsetX = normalizedVector[0] * minOffset;
+                var offsetY = normalizedVector[1] * minOffset;
+                return [midpoint[0] + offsetX, midpoint[1] + offsetY];
+            };
+            /**
+             * Calculate the centroid (average of all points) of the shape
+             */
+            EdgeDots.prototype.calculateCentroid = function (points) {
+                var sumX = 0;
+                var sumY = 0;
+                points.forEach(function (point) {
+                    sumX += point[0];
+                    sumY += point[1];
+                });
+                var centerX = sumX / points.length;
+                var centerY = sumY / points.length;
+                return [centerX, centerY];
+            };
+            /**
+             * Helper method to extract ordered corner points from the main model
+             */
+            EdgeDots.prototype.getOrderedCornerPoints = function (model) {
                 var points = [];
-                // Loop through paths in the model and extract the edge midpoints
-                for (var pathId in model.paths) {
-                    var path_4 = model.paths[pathId];
-                    // If the path is a line, we can calculate the midpoint of the edge
-                    if (path_4.type === "line") {
-                        var line = path_4;
-                        var midX = (line.origin[0] + line.end[0]) / 2;
-                        var midY = (line.origin[1] + line.end[1]) / 2;
-                        // Add a point that is dotDistance away from the edge midpoint
-                        points.push([midX, midY]);
+                // Use the MakerJs function to find the chain and extract corner points
+                var chain = MakerJs.model.findChains(model)[0];
+                if (chain) {
+                    var chainLinks = chain.links;
+                    for (var _i = 0, chainLinks_1 = chainLinks; _i < chainLinks_1.length; _i++) {
+                        var link = chainLinks_1[_i];
+                        var line = link.walkedPath.pathContext;
+                        if (link.reversed) {
+                            points.push(line.end);
+                        }
+                        else {
+                            points.push(line.origin);
+                        }
                     }
-                    // For other path types, you can implement logic to extract key points
-                    // such as for arcs, curves, etc.
                 }
-                // Return edge points
                 return points;
             };
             return EdgeDots;
         }());
         models.EdgeDots = EdgeDots;
         EdgeDots.metaParameters = [
-            { title: "Dot Distance", type: "range", min: 1, max: 20, value: 3.2 },
-            { title: "Dot Diameter", type: "range", min: 1, max: 10, value: 1.4 }
+            { title: "Dot Diameter", type: "range", min: 1, max: 10, value: 1.4 },
+            { title: "Offset", type: "range", min: 1, max: 50, value: 5 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
