@@ -11165,24 +11165,31 @@ var MakerJs;
     var models;
     (function (models) {
         var Heart = /** @class */ (function () {
-            function Heart(r, a2) {
+            function Heart(height) {
                 this.paths = {};
-                var a = a2 / 2;
-                var a_radians = MakerJs.angle.toRadians(a);
-                var x = Math.cos(a_radians) * r;
-                var y = Math.sin(a_radians) * r;
-                var z = MakerJs.solvers.solveTriangleASA(90, 2 * r, 90 - a);
-                this.paths.arc1 = new MakerJs.paths.Arc([x, 0], r, -a, 180 - a);
-                this.paths.line1 = new MakerJs.paths.Line([x * 2, -y], [0, -z + y]);
+                var aspectRatio = 23.4 / 21.4; // Example from the image (width/height)
+                var width = height; // Width is derived from height
+                // Calculate the radius based on the height of the heart
+                var radius = height / 2;
+                // Calculate angles and necessary values
+                var halfAngle = 45; // Fixed angle
+                var angleRadians = MakerJs.angle.toRadians(halfAngle);
+                var x = Math.cos(angleRadians) * radius;
+                var y = Math.sin(angleRadians) * radius;
+                var triangleHeight = MakerJs.solvers.solveTriangleASA(90, 2 * radius, 90 - halfAngle);
+                // Define paths based on the calculated dimensions
+                this.paths.arc1 = new MakerJs.paths.Arc([x, 0], radius, -halfAngle, 180 - halfAngle);
+                this.paths.line1 = new MakerJs.paths.Line([x * 2, -y], [0, -triangleHeight + y]);
+                // Mirror the arc and line to form the heart
                 this.paths.arc2 = MakerJs.path.mirror(this.paths.arc1, true, false);
                 this.paths.line2 = MakerJs.path.mirror(this.paths.line1, true, false);
             }
             return Heart;
         }());
         models.Heart = Heart;
+        // Meta parameters for dynamic control
         Heart.metaParameters = [
-            { title: "Radius", type: "range", min: 1, max: 100, value: 50 },
-            { title: "Angle", type: "range", min: 1, max: 180, value: 45 }
+            { title: "Height", type: "range", min: 1, max: 104, value: 21.4 }
         ];
     })(models = MakerJs.models || (MakerJs.models = {}));
 })(MakerJs || (MakerJs = {}));
@@ -11272,84 +11279,86 @@ var MakerJs;
     var models;
     (function (models) {
         var CornerDots = /** @class */ (function () {
-            function CornerDots(mainModel, dotDiameter, offset) {
-                var _this = this;
+            function CornerDots(mainModel, dotDiameter, minOffset) {
                 this.paths = {};
-                // Validate the input parameters
-                if (offset <= 0)
-                    offset = 1;
-                if (dotDiameter <= 0)
-                    dotDiameter = 1;
-                // Find the corner points and move them toward the calculated midpoint of opposite lines
-                var cornerPoints = this.getOffsetCornerPoints(mainModel, offset);
-                // Add dots at the offset corner points
-                cornerPoints.forEach(function (cornerPoint, index) {
-                    var dot = _this.drawDotAtPoint(cornerPoint, dotDiameter);
-                    _this.paths["dot_".concat(index)] = dot;
-                });
+                // Get the ordered corner points of the model
+                var cornerPoints = this.getOrderedCornerPoints(mainModel);
+                // Place a dot at each convex corner, with a minimum offset from the corner
+                for (var i = 0; i < cornerPoints.length; i++) {
+                    var prev = cornerPoints[(i - 1 + cornerPoints.length) % cornerPoints.length];
+                    var curr = cornerPoints[i];
+                    var next = cornerPoints[(i + 1) % cornerPoints.length];
+                    if (this.isConvex(prev, curr, next)) {
+                        // Adjust dot position by minOffset using MakerJs.measure.pointDistance
+                        var adjustedPoint = this.adjustPoint(curr, minOffset, prev, next);
+                        // Check if the dot is inside the main model
+                        if (MakerJs.measure.isPointInsideModel(adjustedPoint, mainModel)) {
+                            // Create a circle (dot) at the adjusted point with the specified diameter
+                            this.paths["corner".concat(i)] = new MakerJs.paths.Circle(adjustedPoint, dotDiameter / 2);
+                        }
+                    }
+                }
             }
-            // Get the offset corner points by calculating the midpoint of lines connecting opposite edge midpoints
-            CornerDots.prototype.getOffsetCornerPoints = function (model, offset) {
+            /**
+             * Helper method to adjust the point by minOffset along the edge direction
+             */
+            CornerDots.prototype.adjustPoint = function (curr, minOffset, prev, next) {
+                var vectorToPrev = [prev[0] - curr[0], prev[1] - curr[1]];
+                var vectorToNext = [next[0] - curr[0], next[1] - curr[1]];
+                // Measure the magnitudes using MakerJs.measure.pointDistance
+                var magPrev = MakerJs.measure.pointDistance(curr, prev);
+                var magNext = MakerJs.measure.pointDistance(curr, next);
+                // Normalize vectors
+                var normalizedPrev = [vectorToPrev[0] / magPrev, vectorToPrev[1] / magPrev];
+                var normalizedNext = [vectorToNext[0] / magNext, vectorToNext[1] / magNext];
+                // Adjust point by moving along the normalized vectors by minOffset
+                var offsetX = (normalizedPrev[0] + normalizedNext[0]) * minOffset;
+                var offsetY = (normalizedPrev[1] + normalizedNext[1]) * minOffset;
+                return [curr[0] + offsetX, curr[1] + offsetY];
+            };
+            /**
+             * Helper method to extract ordered corner points from the main model
+             */
+            CornerDots.prototype.getOrderedCornerPoints = function (model) {
                 var points = [];
-                // Collect all corner points from the model
-                var lines = this.getLinesFromModel(model);
-                // Process each line to find opposite line midpoints
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i];
-                    // Find the midpoints of adjacent lines
-                    var currentMidpoint = MakerJs.point.middle(line);
-                    var nextLine = lines[(i + 1) % lines.length];
-                    var nextMidpoint = MakerJs.point.middle(nextLine);
-                    // Calculate the center between the two midpoints using our custom function
-                    var centerBetweenMidpoints = this.calculateMidpointBetweenTwoPoints(currentMidpoint, nextMidpoint);
-                    // Move the corner towards the center between midpoints by offset
-                    var offsetCornerPoint = this.movePointTowards(currentMidpoint, centerBetweenMidpoints, offset);
-                    points.push(offsetCornerPoint);
+                // Use the MakerJs function to find the chain and extract corner points
+                var chain = MakerJs.model.findChains(model)[0];
+                if (chain) {
+                    var chainLinks = chain.links;
+                    for (var _i = 0, chainLinks_1 = chainLinks; _i < chainLinks_1.length; _i++) {
+                        var link = chainLinks_1[_i];
+                        var line = link.walkedPath.pathContext;
+                        if (link.reversed) {
+                            points.push(line.end);
+                        }
+                        else {
+                            points.push(line.origin);
+                        }
+                    }
                 }
                 return points;
             };
-            // Custom function to calculate the midpoint between two points
-            CornerDots.prototype.calculateMidpointBetweenTwoPoints = function (pointA, pointB) {
-                var midX = (pointA[0] + pointB[0]) / 2;
-                var midY = (pointA[1] + pointB[1]) / 2;
-                return [midX, midY]; // Return the midpoint between the two points
-            };
-            // Extract lines from the model
-            CornerDots.prototype.getLinesFromModel = function (model) {
-                var lines = [];
-                for (var pathId in model.paths) {
-                    var path_2 = model.paths[pathId];
-                    if (path_2.type === MakerJs.pathType.Line) {
-                        lines.push(path_2);
-                    }
-                }
-                return lines;
-            };
-            // Move point toward the target by the offset
-            CornerDots.prototype.movePointTowards = function (point, target, offset) {
-                // Calculate the vector from the point to the target
-                var vectorToTarget = MakerJs.point.subtract(target, point);
-                // Calculate the length of the vector (distance to target)
-                var distanceToTarget = MakerJs.measure.pointDistance(point, target);
-                // If the distance is zero, do nothing
-                if (distanceToTarget === 0)
-                    return point;
-                // Calculate the scaling factor to move the point toward the target by the offset
-                var scale = offset / distanceToTarget;
-                // Move the point proportionally along both axes
-                var newX = point[0] + (vectorToTarget[0] * scale);
-                var newY = point[1] + (vectorToTarget[1] * scale);
-                return [newX, newY];
-            };
-            // Draw a dot (circle) at the specified point
-            CornerDots.prototype.drawDotAtPoint = function (center, diameter) {
-                var radius = diameter / 2;
-                return new MakerJs.paths.Circle(center, radius);
+            /**
+             * Determine if a corner formed by three points is convex
+             */
+            CornerDots.prototype.isConvex = function (prev, curr, next) {
+                // Vectors from current to prev and current to next
+                var vectorA = [prev[0] - curr[0], prev[1] - curr[1]];
+                var vectorB = [next[0] - curr[0], next[1] - curr[1]];
+                // Calculate the dot product and magnitudes of the vectors using MakerJs.measure.pointDistance
+                var magA = MakerJs.measure.pointDistance(curr, prev);
+                var magB = MakerJs.measure.pointDistance(curr, next);
+                var dotProduct = (vectorA[0] * vectorB[0]) + (vectorA[1] * vectorB[1]);
+                // Calculate the cosine of the angle between the vectors
+                var cosTheta = dotProduct / (magA * magB);
+                // Calculate the angle in degrees
+                var angle = Math.acos(cosTheta) * (180 / Math.PI);
+                // Convex if the angle is less than 180 degrees
+                return angle < 180;
             };
             return CornerDots;
         }());
         models.CornerDots = CornerDots;
-        // Meta parameters for the CornerDots class
         CornerDots.metaParameters = [
             { title: "Dot Diameter", type: "range", min: 1, max: 10, value: 1.4 },
             { title: "Offset", type: "range", min: 1, max: 50, value: 5 }
@@ -11430,8 +11439,8 @@ var MakerJs;
                 var chain = MakerJs.model.findChains(model)[0];
                 if (chain) {
                     var chainLinks = chain.links;
-                    for (var _i = 0, chainLinks_1 = chainLinks; _i < chainLinks_1.length; _i++) {
-                        var link = chainLinks_1[_i];
+                    for (var _i = 0, chainLinks_2 = chainLinks; _i < chainLinks_2.length; _i++) {
+                        var link = chainLinks_2[_i];
                         var line = link.walkedPath.pathContext;
                         if (link.reversed) {
                             points.push(line.end);
