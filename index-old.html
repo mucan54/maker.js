@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape and Dots Configurator</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/bezier-js@2/bezier.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@0/dist/opentype.js"></script>
+    <script src="docs/target/js/browser.maker.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        /* Basic Styles */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; display: flex; }
+        .config-section, .svg-section { flex: 1; padding: 20px; }
+        .border { border: 1px solid #ccc; }
+        .rounded { border-radius: 4px; }
+        .bg-white { background-color: white; }
+        .bg-blue-500, .bg-red-500, .bg-green-500, .bg-gray-400 { color: white; padding: 8px; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+
+        #svgOutput { background-color: #f1f9ff; border: 2px solid #0091FF; border-radius: 10px; padding: 20px; width: 100%; height: 600px; }
+
+        svg { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+
+<div x-data="shapeConfigurator()" x-init="init()" class="container">
+    <!-- Configurations Section (Left) -->
+    <div class="config-section">
+        <h1 class="text-2xl mb-4">Shape and Dots Configurator</h1>
+
+        <!-- Main Frame Shape Selection -->
+        <div class="mb-4">
+            <label for="mainShape" class="block">Main Shape</label>
+            <select x-model="mainFrame.shapetype" @change="initializeParameters('mainFrame'); renderSvg()" class="border rounded p-2">
+                <option value="">Select Shape</option>
+                <template x-for="shape in availableShapes">
+                    <option :value="shape.code" x-text="shape.name"></option>
+                </template>
+            </select>
+            <div x-show="mainFrame.shapetype">
+                <template x-for="param in getParameters(mainFrame.shapetype, 'shape')">
+                    <div class="mt-2">
+                        <label x-text="param.title"></label>
+                        <input type="number" x-model="mainFrame.shapeParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2">
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Overlays Section -->
+        <div class="mb-4">
+            <h2 class="text-xl mb-2">Overlays</h2>
+            <template x-for="(overlay, index) in overlays" :key="index">
+                <div class="mb-2">
+                    <select x-model="overlay.shapetype" @change="initializeParameters('overlays', index); renderSvg()" class="border rounded p-2">
+                        <option value="">Select Shape</option>
+                        <template x-for="shape in availableShapes">
+                            <option :value="shape.code" x-text="shape.name"></option>
+                        </template>
+                    </select>
+                    <div class="mt-2">
+                        <label>X Position</label>
+                        <input type="number" x-model="overlay.position.x" @input="renderSvg()" class="border rounded p-2 ml-2">
+                    </div>
+                    <div class="mt-2">
+                        <label>Y Position</label>
+                        <input type="number" x-model="overlay.position.y" @input="renderSvg()" class="border rounded p-2 ml-2">
+                    </div>
+                    <template x-for="param in getParameters(overlay.shapetype, 'shape')">
+                        <div class="mt-2">
+                            <label x-text="param.title"></label>
+                            <input type="number" x-model="overlay.shapeParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2">
+                        </div>
+                    </template>
+                    <button @click="removeOverlay(index)" class="bg-red-500 text-white p-1 rounded ml-2">Remove</button>
+                </div>
+            </template>
+            <button @click="addOverlay()" class="bg-blue-500 text-white p-2 rounded">Add Overlay</button>
+        </div>
+
+        <!-- Dots Section -->
+        <div class="mb-4">
+            <h2 class="text-xl mb-2">Dots</h2>
+            <template x-for="(dot, index) in dots" :key="index">
+                <div class="mb-2">
+                    <select x-model="dot.dotType" @change="initializeParameters('dots', index); renderSvg()" class="border rounded p-2">
+                        <option value="">Select Dot</option>
+                        <template x-for="dotType in availableDots">
+                            <option :value="dotType.code" x-text="dotType.name"></option>
+                        </template>
+                    </select>
+                    <div class="mt-2">
+                        <label>X Position</label>
+                        <input type="number" x-model="dot.position.x" @input="renderSvg()" class="border rounded p-2 ml-2">
+                    </div>
+                    <div class="mt-2">
+                        <label>Y Position</label>
+                        <input type="number" x-model="dot.position.y" @input="renderSvg()" class="border rounded p-2 ml-2">
+                    </div>
+                    <template x-for="param in getParameters(dot.dotType, 'dot')">
+                        <div class="mt-2">
+                            <label x-text="param.title"></label>
+                            <input type="number" x-model="dot.dotParameters[param.title]" @input="renderSvg()" class="border rounded p-2 ml-2">
+                        </div>
+                    </template>
+                    <button @click="removeDot(index)" class="bg-red-500 text-white p-1 rounded ml-2">Remove</button>
+                </div>
+            </template>
+            <button @click="addDot()" class="bg-blue-500 text-white p-2 rounded">Add Dot</button>
+        </div>
+
+        <!-- Cleanup Button -->
+        <div class="mb-4">
+            <button @click="cleanup()" class="bg-red-500 text-white p-2 rounded">
+                Cleanup (Clear Cookies and Reset)
+            </button>
+        </div>
+
+        <!-- Real-time JSON Output -->
+        <div class="mb-4">
+            <h2 class="text-xl mb-2">JSON Output</h2>
+            <textarea readonly x-model="outputJson" class="border rounded p-2 mt-2 w-full" rows="8"></textarea>
+        </div>
+    </div>
+
+    <!-- SVG Output Section (Right) -->
+    <div class="svg-section">
+        <h2 class="text-xl mb-2">SVG Output</h2>
+        <div id="svgOutput" class="border rounded p-2 mt-2 bg-white"></div>
+    </div>
+</div>
+
+<script>
+    var makerjs = require('makerjs');
+
+    // Cookie Helper Functions
+    function setCookie(name, value, days) {
+        let expires = "";
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    }
+
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+
+    function eraseCookie(name) {
+        document.cookie = name + '=; Max-Age=-99999999;';
+    }
+
+    function shapeConfigurator() {
+        return {
+            mainFrame: { shapetype: "", shapeParameters: {} },
+            overlays: [],
+            dots: [],
+            outputJson: "",
+            availableShapes: [],
+            availableDots: [],
+            is_finalized: false,
+
+            init() {
+                this.availableShapes = makerjs.manager.getAllShapes();
+                this.availableDots = makerjs.manager.getAllDots();
+
+                // Check for saved configuration in cookies
+                const savedConfig = getCookie('shapeConfig');
+                if (savedConfig) {
+                    const parsedConfig = JSON.parse(savedConfig);
+                    this.mainFrame = parsedConfig.mainFrame;
+                    this.overlays = parsedConfig.overlays;
+                    this.dots = parsedConfig.dots;
+                    this.is_finalized = parsedConfig.is_finalized || false;
+                    this.updateConfig();
+                }
+            },
+
+            getParameters(code, type) {
+                const items = type === 'shape' ? this.availableShapes : this.availableDots;
+                return items.find(item => item.code === code)?.parameters || [];
+            },
+
+            addOverlay() {
+                this.overlays.push({ shapetype: '', shapeParameters: {}, position: { x: 0, y: 0 } });
+                this.updateConfig();
+            },
+
+            removeOverlay(index) {
+                this.overlays.splice(index, 1);
+                this.updateConfig();
+            },
+
+            addDot() {
+                this.dots.push({ dotType: '', dotParameters: {}, position: { x: 0, y: 0 } });
+                this.updateConfig();
+            },
+
+            removeDot(index) {
+                this.dots.splice(index, 1);
+                this.updateConfig();
+            },
+
+            updateConfig() {
+                this.outputJson = JSON.stringify({
+                    mainFrame: this.mainFrame,
+                    overlays: this.overlays,
+                    dots: this.dots,
+                    is_finalized: this.is_finalized
+                }, null, 2);
+
+                // Save configuration to cookie
+                setCookie('shapeConfig', this.outputJson, 7); // Save for 7 days
+
+                this.renderSvg();
+            },
+
+            initializeParameters(type, index = null) {
+                if (type === 'mainFrame' && this.mainFrame.shapetype) {
+                    this.mainFrame.shapeParameters = {};
+                    this.getParameters(this.mainFrame.shapetype, 'shape').forEach(param => {
+                        this.mainFrame.shapeParameters[param.title] = param.value;
+                    });
+                } else if (type === 'overlays' && index !== null && this.overlays[index].shapetype) {
+                    this.overlays[index].shapeParameters = {};
+                    this.getParameters(this.overlays[index].shapetype, 'shape').forEach(param => {
+                        this.overlays[index].shapeParameters[param.title] = param.value;
+                    });
+                } else if (type === 'dots' && index !== null && this.dots[index].dotType) {
+                    this.dots[index].dotParameters = {};
+                    this.getParameters(this.dots[index].dotType, 'dot').forEach(param => {
+                        this.dots[index].dotParameters[param.title] = param.value;
+                    });
+                }
+                this.updateConfig();
+            },
+
+            cleanup() {
+                // Clear cookie and reset settings
+                eraseCookie('shapeConfig');
+                this.mainFrame = { shapetype: "", shapeParameters: {} };
+                this.overlays = [];
+                this.dots = [];
+                this.is_finalized = false;
+                this.updateConfig();
+            },
+
+            renderSvg() {
+                const svgContainer = document.getElementById('svgOutput');
+                svgContainer.innerHTML = '';
+
+                if (!this.mainFrame.shapetype) return;
+
+                let mainShape = makerjs.manager.getModel(this.mainFrame.shapetype, Object.values(this.mainFrame.shapeParameters));
+                mainShape = makerjs.model.center(mainShape);
+
+                let overlayShapes = {};
+
+                this.overlays.forEach(overlay => {
+                    let overlayShape = makerjs.manager.getModel(overlay.shapetype, Object.values(overlay.shapeParameters));
+                    overlayShapes = makerjs.model.combine(overlayShapes, overlayShape, true, true);
+                });
+
+                this.dots.forEach(dot => {
+                    let dotShape = makerjs.manager.getModel(dot.dotType, Object.values(dot.dotParameters));
+                    overlayShapes = makerjs.model.combine(overlayShapes, dotShape, true, true);
+                });
+
+                mainShape = makerjs.model.combine(mainShape, overlayShapes, true, true);
+                const svg = makerjs.exporter.toSVG(mainShape);
+                svgContainer.innerHTML = svg;
+            }
+        };
+    }
+</script>
+
+</body>
+</html>
