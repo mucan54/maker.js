@@ -35,6 +35,7 @@ namespace MakerJs.dimension {
     }
 
     function addArrowLine(model: IModel, firstPoint: [number, number], secondPoint: [number, number], label: string) {
+        const bestArrowLength = Math.min(3, MakerJs.measure.pointDistance(firstPoint, secondPoint) / 4);
         const arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, 3, label);
         if(addDimensionsToModel) {
             MakerJs.model.addModel(model, arrowLine, 'dimensions');
@@ -269,9 +270,11 @@ namespace MakerJs.dimension {
         const right = extents.high[0];
         const bottom = extents.low[1];
         const top = extents.high[1];
+        const calculatedWidht = right - left;
+        const calculatedHeight = top - bottom;
 
-        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], `${getLabelText('width', customLangObj)} - ${width.toFixed(2)} cm`);
-        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], `${getLabelText('height', customLangObj)} - ${height.toFixed(2)} cm`);
+        addArrowLine(model, [left, bottom - ARROW_OFFSET], [right, bottom - ARROW_OFFSET], `${getLabelText('width', customLangObj)} - ${calculatedWidht.toFixed(2)} cm`);
+        addArrowLine(model, [right + ARROW_OFFSET, bottom], [right + ARROW_OFFSET, top], `${getLabelText('height', customLangObj)} - ${calculatedHeight.toFixed(2)} cm`);
     }
 
     // Kite
