@@ -98,7 +98,7 @@
                 <template x-for="param in getParameters(mainFrame.shapetype, 'shape')">
                     <div class="mt-2">
                         <label x-text="param.title"></label>
-                        <input type="number" x-model="mainFrame.shapeParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                        <input type="number" :min="param.min" :max="param.max" x-model="mainFrame.shapeParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                     </div>
                 </template>
                 <div class="mt-2">
@@ -134,7 +134,7 @@
                     <template x-for="param in getParameters(cutout.shapetype, 'shape')">
                         <div class="mt-2">
                             <label x-text="param.title"></label>
-                            <input type="number" x-model="cutout.shapeParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                            <input type="number" :min="param.min" :max="param.max"  x-model="cutout.shapeParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                         </div>
                     </template>
                     <div class="mt-2">
@@ -173,7 +173,7 @@
                     <template x-for="param in getParameters(dot.dotType, 'dot')">
                         <div class="mt-2">
                             <label x-text="param.title"></label>
-                            <input type="number" x-model="dot.dotParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                            <input type="number" :min="param.min" :max="param.max" x-model="dot.dotParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                         </div>
                     </template>
                     <button @click="removeDot(index)" :class="{'disabled-button': is_finalized}" class="bg-red-500 text-white p-1 rounded ml-2" :disabled="is_finalized">Remove</button>
