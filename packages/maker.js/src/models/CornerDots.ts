@@ -4,106 +4,149 @@ namespace MakerJs.models {
         public paths: IPathMap = {};
 
         constructor(mainModel: IModel, dotDiameter: number, offset: number) {
-            // Calculate the true center of the shape
-            const center = this.calculateShapeCenter(mainModel);
+            const corners = this.getCornersWithEdges(mainModel);
+            const center = this.calculateCenter(mainModel);
 
-            // Find the corner points and move them toward the center
-            const cornerPoints = this.getOffsetCornerPoints(mainModel, center, offset);
+            corners.forEach((corner, index) => {
+                // Perform calculations for each corner
+                const cornerAngle = this.calculateAngle(corner.edges);
+                const halfAngle = cornerAngle / 2;
 
-            // Add dots at the offset corner points
-            cornerPoints.forEach((cornerPoint, index) => {
-                const dot = this.drawDotAtPoint(cornerPoint, dotDiameter);
-                this.paths[`dot_${index}`] = dot;
+                // Calculate the point inside the corner by the offset distance
+                const offsetPoint = this.getOffsetPoint(corner.corner, halfAngle, offset, center);
+
+                this.paths['corner_' + index] = new MakerJs.paths.Line(corner.corner, offsetPoint);
+
+                // Add a CornerDot to the offset point
+                this.paths['circle_' + index] = new MakerJs.paths.Circle(offsetPoint, dotDiameter / 2);
             });
         }
 
-        // Calculate the true center of the shape by averaging the midpoints of all lines
-        private calculateShapeCenter(model: IModel): IPoint {
-            const midPoints: IPoint[] = [];
+        private calculateCenter(model: IModel): IPoint {
+            const lines = model.paths;
 
-            // Find the midpoint of each line in the shape
-            for (const pathId in model.paths) {
-                const path = model.paths[pathId];
+            let totalX = 0;
+            let totalY = 0;
 
-                if (path.type === MakerJs.pathType.Line) {
-                    const line = path as IPathLine;
-                    const midPoint = MakerJs.point.middle(line);
-                    midPoints.push(midPoint);
-                }
+            let totalPoints = 0;
+
+            for (let id in lines) {
+                if(lines[id].type !== 'line') continue;
+
+                let line = lines[id] as IPathLine;
+                // Find midpoint
+                let midPoint = MakerJs.point.middle(line);
+                totalX += midPoint[0];
+                totalY += midPoint[1];
+                totalPoints += 1;
             }
 
-            // Calculate the average of all midpoints to find the center
-            const sum = midPoints.reduce((acc, point) => {
-                return [acc[0] + point[0], acc[1] + point[1]];
-            }, [0, 0]);
-
-            const centerX = sum[0] / midPoints.length;
-            const centerY = sum[1] / midPoints.length;
-
-            return [centerX, centerY];  // Return the true center of the shape
+            return [totalX / totalPoints, totalY / totalPoints];
         }
 
-        // Calculate the corner points and move them toward the center based on the offset
-        private getOffsetCornerPoints(model: IModel, center: IPoint, offset: number): IPoint[] {
-            const points: IPoint[] = [];
+        // Finding the corner coordinates and edges
+        private getCornersWithEdges(model: IModel): {corner: IPoint, edges: [IPathLine, IPathLine]}[] {
+            let cornersWithEdges: {corner: IPoint, edges: [IPathLine, IPathLine]}[] = [];
+            let paths = model.paths;
 
-            // Collect all corner points from the model
-            for (const pathId in model.paths) {
-                const path = model.paths[pathId];
+            if (paths) {
+                let allPoints: IPoint[] = [];
 
-                if (path.type === MakerJs.pathType.Line) {
-                    const line = path as IPathLine;
-                    points.push(line.origin, line.end);
+                // Record all lines and corner points
+                for (let id in paths) {
+                    let path = paths[id];
+                    if (path.type === 'line') {
+                        const line = path as IPathLine;
+                        allPoints.push(line.origin);
+                        allPoints.push(line.end); // Only 'line' type has 'end'
+                    }
                 }
+
+                // Get all unique corners
+                let uniquePoints = this.distinctPoints(allPoints);
+
+                // For each corner, find the edges that meet at this corner
+                uniquePoints.forEach(corner => {
+                    let connectedEdges: IPathLine[] = [];
+
+                    for (let id in paths) {
+                        let path = paths[id];
+                        if (path.type === 'line') {
+                            const line = path as IPathLine;
+                            if (this.isPointEqual(line.origin, corner) || this.isPointEqual(line.end, corner)) {
+                                connectedEdges.push(line);
+                            }
+                        }
+                    }
+
+                    if (connectedEdges.length === 2) { // Corner is formed by two edges
+                        cornersWithEdges.push({
+                            corner: corner,
+                            edges: [connectedEdges[0], connectedEdges[1]]
+                        });
+                    }
+                });
             }
 
-            // Remove duplicate points
-            const uniquePoints = this.removeDuplicatePoints(points);
-
-            // Move the points toward the center
-            return this.movePointsTowardCenter(uniquePoints, center, offset);
+            return cornersWithEdges;
         }
 
-        // Remove duplicate points to avoid redundant calculations
-        private removeDuplicatePoints(points: IPoint[]): IPoint[] {
-            return points.filter((point, index, self) =>
-                    index === self.findIndex((p) =>
-                        this.arePointsEqual(p, point)
-                    )
-            );
+        // Finding the corner angle between two edges
+        private calculateAngle(edges: [IPathLine, IPathLine]): number {
+            const [edge1, edge2] = edges;
+            const slope1 = MakerJs.measure.lineSlope(edge1);
+            const slope2 = MakerJs.measure.lineSlope(edge2);
+
+            // Handle special case where there's a vertical line (no slope)
+            let angle1 = this.getAngleFromSlope(slope1);
+            let angle2 = this.getAngleFromSlope(slope2);
+
+            // Find the difference between the two angles
+            let angleBetween = Math.abs(angle1 - angle2);
+            if (angleBetween > Math.PI) {
+                angleBetween = 2 * Math.PI - angleBetween;
+            }
+            return angleBetween;
         }
 
-        // Check if two points are equal
-        private arePointsEqual(point1: IPoint, point2: IPoint): boolean {
-            return point1[0] === point2[0] && point1[1] === point2[1];
+        // Calculate angle from the ISlope type
+        private getAngleFromSlope(slope: ISlope): number {
+            if (!slope.hasSlope) {
+                // Vertical line (x constant)
+                return Math.PI / 2;
+            } else {
+                return Math.atan(slope.slope!); // Calculate angle using the slope value
+            }
         }
 
-        // Move points toward the center by the given offset
-        private movePointsTowardCenter(points: IPoint[], center: IPoint, offset: number): IPoint[] {
-            return points.map(point => {
-                // Calculate the distance from the point to the center
-                const distanceToCenter = MakerJs.measure.pointDistance(point, center);
+        // Find the new point inside the corner at the given offset using hypotenuse and angle
+        private getOffsetPoint(corner: IPoint, halfAngle: number, offset: number, center: IPoint): IPoint {
+            // Calculate hypotenuse: used to place the offset distance towards the corner
+            const hypotenuse = offset / Math.sin(halfAngle);
 
-                // If the distance is very small, do not move the point
-                if (distanceToCenter === 0) {
-                    return point;
+            const angleToCenter = MakerJs.angle.ofPointInRadians(corner, center);
+
+            // Calculate a new point at the offset distance
+            const x = corner[0] + hypotenuse * Math.cos(angleToCenter);
+            const y = corner[1] + hypotenuse * Math.sin(angleToCenter);
+
+            return [x, y];
+        }
+
+        // Simple function to compare two points
+        private isPointEqual(a: IPoint, b: IPoint): boolean {
+            return MakerJs.measure.pointDistance(a, b) < 0.0001;
+        }
+
+        // Distinct function to get unique points
+        private distinctPoints(points: IPoint[]): IPoint[] {
+            let uniquePoints: IPoint[] = [];
+            points.forEach(point => {
+                if (!uniquePoints.some(p => this.isPointEqual(p, point))) {
+                    uniquePoints.push(point);
                 }
-
-                // Scale the movement based on the distance and offset
-                const scale = (distanceToCenter - offset) / distanceToCenter;
-
-                // Move the point toward the center using the scaled values
-                const newX = point[0] + (center[0] - point[0]) * (1 - scale);
-                const newY = point[1] + (center[1] - point[1]) * (1 - scale);
-
-                return [newX, newY];
             });
-        }
-
-        // Draw a dot (circle) at the specified point
-        private drawDotAtPoint(center: IPoint, diameter: number): IPathCircle {
-            const radius = diameter / 2;
-            return new MakerJs.paths.Circle(center, radius);
+            return uniquePoints;
         }
     }
 
@@ -112,5 +155,4 @@ namespace MakerJs.models {
         { title: "Dot Diameter", type: "range", min: 1, max: 10, value: 1.4 },
         { title: "Offset", type: "range", min: 1, max: 50, value: 5 }
     ];
-
 }
