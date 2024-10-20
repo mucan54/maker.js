@@ -8,8 +8,8 @@ namespace MakerJs.models {
             this.paths = {
                 topLeft: new paths.Line([-width / 2, 0], [0, heightTop]),
                 topRight: new paths.Line([width / 2, 0], [0, heightTop]),
-                bottomLeft: new paths.Line([-width / 2, 0], [0, -heightBottom]),
-                bottomRight: new paths.Line([width / 2, 0], [0, -heightBottom])
+                bottomRight: new paths.Line([width / 2, 0], [0, -heightBottom]),
+                bottomLeft: new paths.Line([-width / 2, 0], [0, -heightBottom])
             };
         }
     }

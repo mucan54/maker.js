@@ -19,7 +19,7 @@ namespace MakerJs.models {
     (<IKit>CustomDot).metaParameters = [
         { title: "X Position", type: "range", min: 0, max: 100, value: 20 },
         { title: "Y Position", type: "range", min: 0, max: 100, value: 30 },
-        { title: "Diameter", type: "range", min: 1, max: 10, value: 5 },
+        { title: "Diameter", type: "range", min: 1, max: 10, value: 2 },
         { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
     ];
 

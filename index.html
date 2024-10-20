@@ -357,7 +357,7 @@
                 svgContainer.innerHTML = '';
 
                 let mainShape = makerjs.manager.fetchMainModel(this.mainFrame.shapetype, this.mainFrame.shapeParameters);
-
+                console.log(mainShape);
                 if (!mainShape) return;
 
                 const mainShapeExtents = makerjs.measure.modelExtents(mainShape);
@@ -413,7 +413,11 @@
                 });
 
                 this.dots.forEach(dot => {
+                    if(!dot.dotType) return;
                     let dotShape = makerjs.manager.getModel(dot.dotType, dot.dotParameters);
+                    //center the dot
+                    makerjs.model.center(dotShape);
+                    makerjs.model.originate(dotShape);
                     if (dotShape) {
                         const dotExtents = makerjs.measure.modelExtents(dotShape);
                         const dotCenter = {
@@ -425,6 +429,10 @@
                         const dotPositionY = mainShapeCenter.y - (dotCenter.y - dot.position.y);
 
                         dotShape.layer = "red";
+                        //remove frame
+                        if(dotShape.models && dotShape.models['frame']) {
+                            delete dotShape.models['frame'];
+                        }
                         if(!this.is_finalized) {
                             cutoutShapes = new makerjs.model.combine(
                                 makerjs.model.move(dotShape, [dotPositionX, dotPositionY]),
