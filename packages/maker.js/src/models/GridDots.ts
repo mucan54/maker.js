@@ -41,6 +41,6 @@ namespace MakerJs.models {
         { title: "Number Horizontal", type: "range", min: 1, max: 10, value: 5 },
         { title: "Number Vertical", type: "range", min: 1, max: 10, value: 5 },
         { title: "Borehole Diameter", type: "range", min: 1, max: 20, value: 3 },
-        { title: "Distance to Center of Hole", type: "range", min: 0.1, max: 10, value: 1 }
+        { title: "Distance to Center of Hole", type: "range", min: 1, max: 10, value: 1 }
     ];
 }
