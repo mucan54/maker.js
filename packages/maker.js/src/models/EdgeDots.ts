@@ -4,101 +4,52 @@ namespace MakerJs.models {
         public paths: IPathMap = {};
 
         constructor(mainModel: IModel, dotDiameter: number, minOffset: number) {
-            // Get the ordered corner points of the model
-            if(minOffset <= 0) minOffset = 1;
-            if(dotDiameter <= 0) dotDiameter = 1;
+            // Ensure a valid minimum offset and dot diameter
+            if (minOffset <= 0) minOffset = 1;
+            if (dotDiameter <= 0) dotDiameter = 1;
 
-            const cornerPoints = this.getOrderedCornerPoints(mainModel);
+            // Get all the lines (edges) in the model
+            const edges = this.getEdges(mainModel);
+            const center = MakerJs.measure.modelExtents(mainModel).center;
+            const cloneModel = MakerJs.cloneObject(mainModel);
 
-            // For each edge, calculate the midpoint and place a dot
-            for (let i = 0; i < cornerPoints.length; i++) {
-                const curr = cornerPoints[i];
-                const next = cornerPoints[(i + 1) % cornerPoints.length];
+            // For each edge, calculate a parallel line and place a dot at the midpoint
+            edges.forEach((edge, i) => {
+                // Create a parallel line to the current edge, offset by minOffset
+                const parallelLine = new MakerJs.paths.Parallel(edge, minOffset, center);
 
-                // Calculate the midpoint between the current and next points
-                const midpoint = this.calculateMidpoint(curr, next);
+                // Calculate the midpoint of the parallel line
+                const midpoint = MakerJs.point.middle(parallelLine);
 
-                // Optionally move the midpoint inwards if a minOffset is provided
-                const adjustedMidpoint = this.adjustPointTowardsCentroid(midpoint, mainModel, minOffset);
-
-                // Ensure the adjusted point is still inside the shape
-                if (MakerJs.measure.isPointInsideModel(adjustedMidpoint, mainModel)) {
-                    // Create a circle (dot) at the adjusted midpoint with the specified diameter
-                    this.paths[`edge${i}`] = new paths.Circle(adjustedMidpoint, dotDiameter / 2);
-                }
-            }
-        }
-
-        /**
-         * Calculate the midpoint between two points
-         */
-        private calculateMidpoint(point1: IPoint, point2: IPoint): IPoint {
-            return [
-                (point1[0] + point2[0]) / 2,
-                (point1[1] + point2[1]) / 2
-            ];
-        }
-
-        /**
-         * Adjust the point towards the centroid by a specified offset
-         */
-        private adjustPointTowardsCentroid(midpoint: IPoint, model: IModel, minOffset: number): IPoint {
-            // Calculate the centroid of the model (average of all corner points)
-            const cornerPoints = this.getOrderedCornerPoints(model);
-            const centroid = this.calculateCentroid(cornerPoints);
-
-            const vectorToCentroid = [centroid[0] - midpoint[0], centroid[1] - midpoint[1]];
-            const magToCentroid = MakerJs.measure.pointDistance(midpoint, centroid);
-            const normalizedVector = [vectorToCentroid[0] / magToCentroid, vectorToCentroid[1] / magToCentroid];
-
-            const offsetX = normalizedVector[0] * minOffset;
-            const offsetY = normalizedVector[1] * minOffset;
-
-            return [midpoint[0] + offsetX, midpoint[1] + offsetY];
-        }
-
-        /**
-         * Calculate the centroid (average of all points) of the shape
-         */
-        private calculateCentroid(points: IPoint[]): IPoint {
-            let sumX = 0;
-            let sumY = 0;
-
-            points.forEach(point => {
-                sumX += point[0];
-                sumY += point[1];
+                // Create a circle (dot) at the midpoint with the specified diameter
+                this.paths[`edge${i}`] = new MakerJs.paths.Circle(midpoint, dotDiameter / 2);
             });
 
-            const centerX = sumX / points.length;
-            const centerY = sumY / points.length;
-
-            return [centerX, centerY];
+            //@ts-ignore
+            this.models = {};
+            //@ts-ignore
+            this.models['frame'] = cloneModel;
         }
 
         /**
-         * Helper method to extract ordered corner points from the main model
+         * Get all the line edges in the model
          */
-        private getOrderedCornerPoints(model: IModel): IPoint[] {
-            const points: IPoint[] = [];
+        private getEdges(model: IModel): IPathLine[] {
+            const edges: IPathLine[] = [];
 
-            // Use the MakerJs function to find the chain and extract corner points
-            const chain = MakerJs.model.findChains(model)[0];
-            if (chain) {
-                const chainLinks = chain.links;
-                for (let link of chainLinks) {
-                    const line = link.walkedPath.pathContext as IPathLine;
-                    if (link.reversed) {
-                        points.push(line.end);
-                    } else {
-                        points.push(line.origin);
-                    }
+            // Loop through all the paths in the model
+            for (let id in model.paths) {
+                const path = model.paths[id];
+                if (path.type === 'line') {
+                    edges.push(path as IPathLine); // Cast to IPathLine
                 }
             }
 
-            return points;
+            return edges;
         }
     }
 
+    // Meta parameters to define the input values for the dots on the edge
     (<IKit>EdgeDots).metaParameters = [
         { title: "Dot Diameter", type: "range", min: 1, max: 10, value: 1.4 },
         { title: "Offset", type: "range", min: 1, max: 50, value: 5 }

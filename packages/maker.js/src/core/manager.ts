@@ -34,7 +34,9 @@ namespace MakerJs.manager {
 
     const mainShapeRequiredModels = [
         "CornerDots",
-        "EdgeDots"
+        "EdgeDots",
+        "GridDots",
+        "RadialDots"
     ];
 
     export function getAllModels(): any {

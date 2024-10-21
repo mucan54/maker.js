@@ -3,29 +3,44 @@ namespace MakerJs.models {
     export class GridDots implements IModel {
         public paths: IPathMap = {};
 
-        constructor(rectWidth: number, rectHeight: number, gridHorizontal: number, gridVertical: number, dotDistance: number, scale: number) {
-            
-            const scaledDotDistance = dotDistance * scale;
-            const scaledWidth = rectWidth * scale;
-            const scaledHeight = rectHeight * scale;
+        constructor(mainModel: IModel, numberHorizontal: number, numberVertical: number, boreholeDiameter: number, distanceToCenter: number) {
 
-            for (let i = 0; i < gridHorizontal; i++) {
-                for (let j = 0; j < gridVertical; j++) {
-                    const x = scaledDotDistance + i * ((scaledWidth - 2 * scaledDotDistance) / (gridHorizontal - 1));
-                    const y = scaledDotDistance + j * ((scaledHeight - 2 * scaledDotDistance) / (gridVertical - 1));
-                    this.paths[`dot_${i}_${j}`] = new paths.Circle([x, y], (1.4 / 2) * scale); // 1.4 is the borehole diameter
+            // Calculate the dimensions of the main model
+            const modelWidth = MakerJs.measure.modelExtents(mainModel).width;
+            const modelHeight = MakerJs.measure.modelExtents(mainModel).height;
+
+            // Scale borehole diameter and edge distance to center
+            const boreholeRadius = boreholeDiameter / 2;
+            const edgeDistance = distanceToCenter;
+
+            // Calculate the spacing between holes horizontally and vertically
+            const xSpacing = (modelWidth - 2 * edgeDistance) / (numberHorizontal - 1);
+            const ySpacing = (modelHeight - 2 * edgeDistance) / (numberVertical - 1);
+
+            // Create the grid of dots, ensuring they stay within the model boundaries
+            for (let i = 0; i < numberHorizontal; i++) {
+                for (let j = 0; j < numberVertical; j++) {
+                    // Calculate the X and Y position of each dot
+                    const x = edgeDistance + i * xSpacing;
+                    const y = edgeDistance + j * ySpacing;
+
+                    // Add the dot to the paths array
+                    this.paths[`dot_${i}_${j}`] = new MakerJs.paths.Circle([x, y], boreholeRadius);
                 }
             }
+
+            //@ts-ignore
+            this.models = {};
+            //@ts-ignore
+            this.models['frame'] = new Rectangle(modelWidth, modelHeight);
         }
     }
 
+    // Meta parameters to define the input values for the grid
     (<IKit>GridDots).metaParameters = [
-        { title: "Rectangle Width", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Rectangle Height", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Grid Horizontal", type: "range", min: 1, max: 10, value: 5 },
-        { title: "Grid Vertical", type: "range", min: 1, max: 10, value: 5 },
-        { title: "Dot Distance", type: "range", min: 1, max: 20, value: 3.2 },
-        { title: "Scale", type: "range", min: 1, max: 20, value: 10 }
+        { title: "Number Horizontal", type: "range", min: 1, max: 10, value: 5 },
+        { title: "Number Vertical", type: "range", min: 1, max: 10, value: 5 },
+        { title: "Borehole Diameter", type: "range", min: 1, max: 20, value: 3 },
+        { title: "Distance to Center of Hole", type: "range", min: 0.1, max: 10, value: 1 }
     ];
-
 }
