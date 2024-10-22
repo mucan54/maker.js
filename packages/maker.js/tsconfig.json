@@ -94,6 +94,7 @@
     "src/models/EdgeDots.ts",
     "src/models/SimpleArrow.ts",
     "src/models/ArrowLine.ts",
-    "src/models/CustomDot.ts"
+    "src/models/CustomDot.ts",
+    "src/models/Grid.ts",
   ]
 }
