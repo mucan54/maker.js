@@ -7,45 +7,45 @@ namespace MakerJs.models {
         constructor(
             FirstArrowLocation: [number, number],
             SecondArrowLocation: [number, number],
-            arrowLength: number,
+            baseArrowLength: number = 10, // Default arrow length
             captionText?: string
         ) {
-            // Calculate angle between first and second points
+            // Calculate the length of the line
+            const lineLength = MakerJs.measure.pointDistance(FirstArrowLocation, SecondArrowLocation);
+
+            // Adjust arrow size based on the length of the line
+            const arrowLength = Math.max(baseArrowLength, lineLength * 0.025); // Arrow length is 5% of the line, min. 20
+
+            // Adjust font size based on the length of the line
+            const fontSize = Math.max(10, lineLength * 0.02); // Font size is 2% of the line, min. 10px
+
+            // Calculate the angle between the first and second points
             const dx = SecondArrowLocation[0] - FirstArrowLocation[0];
             const dy = SecondArrowLocation[1] - FirstArrowLocation[1];
             const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-            // Create the first arrow, pointing towards the second point
+            // Create the first arrow
             this.models.firstArrow = new models.SimpleArrow(arrowLength);
             MakerJs.model.move(this.models.firstArrow, FirstArrowLocation);
-            MakerJs.model.rotate(this.models.firstArrow, angle, FirstArrowLocation); // Rotate based on the line direction
+            MakerJs.model.rotate(this.models.firstArrow, angle, FirstArrowLocation);
 
-            // Create the second arrow, pointing back towards the first point
+            // Create the second arrow
             this.models.secondArrow = new models.SimpleArrow(arrowLength);
             MakerJs.model.move(this.models.secondArrow, SecondArrowLocation);
-            MakerJs.model.rotate(this.models.secondArrow, angle + 180, SecondArrowLocation); // Rotate in the opposite direction
+            MakerJs.model.rotate(this.models.secondArrow, angle + 180, SecondArrowLocation);
 
-            // Create the dimension line
+            // Create the line
             this.paths.line = new MakerJs.paths.Line(FirstArrowLocation, SecondArrowLocation);
 
-            // Calculate the midpoint of the line for the caption
+            // Calculate the midpoint for the text
             const midPoint = MakerJs.point.average(FirstArrowLocation, SecondArrowLocation);
 
-            // Set the left and right anchor points for the caption
-            const captionLength = 50; // Length of the caption line for anchoring
+            // Fixed text placement
+            const captionLength = 50; // We can use a fixed caption area
             const halfCaptionLength = captionLength / 2;
             const leftAnchorPoint = [midPoint[0] - halfCaptionLength, midPoint[1]] as [number, number];
             const rightAnchorPoint = [midPoint[0] + halfCaptionLength, midPoint[1]] as [number, number];
-
-            // Add the caption with proper rotation transform
-            MakerJs.model.addCaption(this, captionText || '', leftAnchorPoint, rightAnchorPoint);
-
-            // Applying transform to rotate the text according to the angle of the line
-            const svgText = document.querySelector('text'); // Assuming there's only one text element
-            if (svgText) {
-                svgText.setAttribute('transform', `rotate(${angle}, ${midPoint[0]}, ${midPoint[1]})`);
-                svgText.setAttribute('stroke', 'none');
-            }
+            MakerJs.model.addCaption(this, captionText || "Dimension", leftAnchorPoint, rightAnchorPoint);
         }
     }
 
@@ -54,7 +54,7 @@ namespace MakerJs.models {
         { title: "First Arrow Location Y", type: "range", min: 0, max: 500, value: 100 },
         { title: "Second Arrow Location X", type: "range", min: 0, max: 500, value: 400 },
         { title: "Second Arrow Location Y", type: "range", min: 0, max: 500, value: 100 },
-        { title: "Arrow Length", type: "range", min: 10, max: 100, value: 20 },
+        { title: "Base Arrow Length", type: "range", min: 1, max: 100, value: 10 },
         { title: "Caption", type: "text", value: "Dimension" }
     ];
 }
