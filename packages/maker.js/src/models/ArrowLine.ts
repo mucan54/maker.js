@@ -10,19 +10,57 @@ namespace MakerJs.models {
             baseArrowLength: number = 10, // Default arrow length
             captionText?: string
         ) {
+
             // Calculate the length of the line
             const lineLength = MakerJs.measure.pointDistance(FirstArrowLocation, SecondArrowLocation);
 
             // Adjust arrow size based on the length of the line
-            const arrowLength = Math.max(baseArrowLength, lineLength * 0.025); // Arrow length is 5% of the line, min. 20
+            const arrowLength = Math.max(baseArrowLength / 2, lineLength * 0.0125); // Arrow length is 5% of the line, min. 20
 
             // Adjust font size based on the length of the line
-            const fontSize = Math.max(10, lineLength * 0.02); // Font size is 2% of the line, min. 10px
+            const fontSize = Math.max(15, lineLength * 0.2); // Font size is 2% of the line, min. 10px
 
             // Calculate the angle between the first and second points
             const dx = SecondArrowLocation[0] - FirstArrowLocation[0];
             const dy = SecondArrowLocation[1] - FirstArrowLocation[1];
             const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            // Midpoint for the caption text
+            const midPoint = MakerJs.point.average(FirstArrowLocation, SecondArrowLocation);
+
+            // Add background rectangle behind the caption
+            const textLength = ((captionText || "Dimension").length + 4) * (fontSize); // Estimate the text length
+            const rectWidth = textLength / 15;
+            const rectHeight = 2;
+
+            //@ts-ignore
+            this.models.layer = "dimension-model";
+
+            // Create the rectangle as a model, not a path
+            const backgroundRect = new MakerJs.models.Rectangle(rectWidth, rectHeight);
+
+            //move the center of the rectangle to the midpoint
+            //@ts-ignore
+            backgroundRect.layer = "dimension-text";
+            backgroundRect.origin = [midPoint[0] - (rectWidth / 2), midPoint[1] - (rectHeight / 2)];
+
+            // Rotate the rectangle based on the angle of the line
+            MakerJs.model.rotate(backgroundRect, angle, midPoint);
+
+            const cloneRect = MakerJs.cloneObject(backgroundRect);
+            const lineMain = new MakerJs.models.Line(FirstArrowLocation, SecondArrowLocation);
+            const line = MakerJs.model.combineSubtraction(lineMain, cloneRect);
+
+            // Add the caption with the rectangle as background
+            MakerJs.model.addCaption(this, captionText || "Dimension", FirstArrowLocation, SecondArrowLocation);
+
+            this.models.lineShape = line;
+            this.models.backgroundRect = backgroundRect;
+
+
+            if(rectWidth >= lineLength) {
+                return;
+            }
 
             // Create the first arrow
             this.models.firstArrow = new models.SimpleArrow(arrowLength);
@@ -33,19 +71,6 @@ namespace MakerJs.models {
             this.models.secondArrow = new models.SimpleArrow(arrowLength);
             MakerJs.model.move(this.models.secondArrow, SecondArrowLocation);
             MakerJs.model.rotate(this.models.secondArrow, angle + 180, SecondArrowLocation);
-
-            // Create the line
-            this.paths.line = new MakerJs.paths.Line(FirstArrowLocation, SecondArrowLocation);
-
-            // Calculate the midpoint for the text
-            const midPoint = MakerJs.point.average(FirstArrowLocation, SecondArrowLocation);
-
-            // Fixed text placement
-            const captionLength = 50; // We can use a fixed caption area
-            const halfCaptionLength = captionLength / 2;
-            const leftAnchorPoint = [midPoint[0] - halfCaptionLength, midPoint[1]] as [number, number];
-            const rightAnchorPoint = [midPoint[0] + halfCaptionLength, midPoint[1]] as [number, number];
-            MakerJs.model.addCaption(this, captionText || "Dimension", leftAnchorPoint, rightAnchorPoint);
         }
     }
 

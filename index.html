@@ -59,7 +59,6 @@
         #svgOutput text {
             fill: black;
             stroke: none;
-            text-shadow: 2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white;
         }
 
         #svgOutput #gray {
@@ -78,6 +77,11 @@
 
         text {
             stroke: none !important;
+        }
+
+        #dimension-text {
+            stroke: white;
+            stroke-width: 15px;
         }
     </style>
 </head>
@@ -509,7 +513,7 @@
                     let shapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
                     options.strokeWidth = 3;
                     options.annotate = false;
-                    options.fontSize = Math.max(Math.max(shapeWidth/30, 3), Math.max(shapeHeight/30, 3));
+                    options.fontSize = Math.max(Math.max(shapeWidth/35, 2), Math.max(shapeHeight/35, 2));
 
                     if(this.mainFrame.showGrid && this.mainFrame.gridUnit) {
                         let grids= new makerjs.models.Grid(mainShape, this.mainFrame.gridUnit, this.mainFrame.gridPositionX || 0, this.mainFrame.gridPositionY || 0);

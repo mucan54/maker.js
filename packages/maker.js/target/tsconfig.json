@@ -96,6 +96,7 @@
     "../src/models/CustomDot.ts",
     "../src/models/ArrowLine.ts",
     "../src/models/SimpleArrow.ts",
-    "../src/models/Grid.ts"
+    "../src/models/Grid.ts",
+    "../src/models/Line.ts",
 ]
 }
