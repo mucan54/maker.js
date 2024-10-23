@@ -7,18 +7,20 @@ namespace MakerJs.models {
         constructor(
             FirstArrowLocation: [number, number],
             SecondArrowLocation: [number, number],
-            baseArrowLength: number = 10, // Default arrow length
+            arrowLength: number = 10, // Default arrow length
             captionText?: string
         ) {
 
             // Calculate the length of the line
             const lineLength = MakerJs.measure.pointDistance(FirstArrowLocation, SecondArrowLocation);
 
-            // Adjust arrow size based on the length of the line
-            const arrowLength = Math.max(baseArrowLength / 2, lineLength * 0.0125); // Arrow length is 5% of the line, min. 20
+            const mainShape = MakerJs.manager.getMainModel();
+            const mainShapeExtents = MakerJs.measure.modelExtents(mainShape);
+            const shapeWidth = mainShapeExtents.high[0] - mainShapeExtents.low[0];
+            const shapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
 
             // Adjust font size based on the length of the line
-            const fontSize = Math.max(15, lineLength * 0.2); // Font size is 2% of the line, min. 10px
+            const fontSize =  Math.max((shapeHeight * 0.01), (shapeWidth * 0.01)); // Font size is 2% of the line, min. 10px
 
             // Calculate the angle between the first and second points
             const dx = SecondArrowLocation[0] - FirstArrowLocation[0];
@@ -30,8 +32,8 @@ namespace MakerJs.models {
 
             // Add background rectangle behind the caption
             const textLength = ((captionText || "Dimension").length + 4) * (fontSize); // Estimate the text length
-            const rectWidth = textLength / 15;
-            const rectHeight = 2;
+            const rectWidth = textLength * 1.5;
+            const rectHeight = fontSize * 2;
 
             //@ts-ignore
             this.models.layer = "dimension-model";

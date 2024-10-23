@@ -513,7 +513,7 @@
                     let shapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
                     options.strokeWidth = 3;
                     options.annotate = false;
-                    options.fontSize = Math.max(Math.max(shapeWidth/35, 2), Math.max(shapeHeight/35, 2));
+                    options.fontSize = Math.max((shapeHeight * 0.01), (shapeWidth * 0.01)) + 'mm';
 
                     if(this.mainFrame.showGrid && this.mainFrame.gridUnit) {
                         let grids= new makerjs.models.Grid(mainShape, this.mainFrame.gridUnit, this.mainFrame.gridPositionX || 0, this.mainFrame.gridPositionY || 0);

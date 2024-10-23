@@ -1,5 +1,5 @@
 namespace MakerJs.dimension {
-    const ARROW_OFFSET = 5; // Offset distance between the shape and the dimension arrows
+    var ARROW_OFFSET = 5; // Offset distance between the shape and the dimension arrows
     var dimensionModels: IModel = {};
     var addDimensionsToModel: boolean = true;
 
@@ -35,8 +35,7 @@ namespace MakerJs.dimension {
     }
 
     function addArrowLine(model: IModel, firstPoint: [number, number], secondPoint: [number, number], label: string) {
-        const bestArrowLength = Math.min(3, MakerJs.measure.pointDistance(firstPoint, secondPoint) / 4);
-        const arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, 3, label);
+        const arrowLine = new MakerJs.models.ArrowLine(firstPoint, secondPoint, ARROW_OFFSET / 4, label);
         if(addDimensionsToModel) {
             MakerJs.model.addModel(model, arrowLine, 'dimensions');
         }
@@ -301,6 +300,9 @@ namespace MakerJs.dimension {
         dimensionModels = {};
         dimensionModels.models = {};
         dimensionModels.models.dimensions = {};
+
+        // This should be relative to the shape size
+        ARROW_OFFSET = Math.max(MakerJs.measure.modelExtents(model).high[1], MakerJs.measure.modelExtents(model).high[0]) / 10;
 
         // Create a rectangle frame around the model
         //const frame = new MakerJs.models.Rectangle(MakerJs.measure.modelExtents(model));
