@@ -140,4 +140,80 @@ namespace MakerJs.manager {
 
         return shapesWithDot;
     }
+
+    export function calculateShapeTotalArea(mainShape: IModel): any {
+        let cost = {};
+        let shapeWidth = MakerJs.measure.modelExtents(getMainModel()).high[0] - MakerJs.measure.modelExtents(getMainModel()).low[0];
+        let shapeHeight = MakerJs.measure.modelExtents(getMainModel()).high[1] - MakerJs.measure.modelExtents(getMainModel()).low[1];
+
+        let allModels = extractModelsFromParentModelRecursive(mainShape);
+
+        let totalCutDistance = 0;
+
+        let validDots = [];
+
+        allModels.forEach((model) => {
+            //check if the model.constructor.name contains "Dot"
+            if(!model.constructor.name.includes('Dot') && model.paths){
+                for(const key in model.paths){
+                    totalCutDistance += MakerJs.measure.pathLength(model.paths[key]);
+                }
+            }
+        });
+
+        allModels.forEach((model) => {
+            if(model.constructor.name.includes('Dot')){
+                for(const key in model.paths){
+                    validDots.push(model.paths[key]);
+                }
+            }
+        });
+
+
+        cost = {
+            mainFrame : {width: Math.round(shapeWidth), height: Math.round(shapeHeight)},
+            cutoutDistance: Math.round(totalCutDistance),
+            dots: validDots
+        }
+
+        return cost;
+    }
+
+    function extractModelsFromParentModelRecursive(mainModel: IModel): any[] {
+        let models: any[] = [];
+        const ignore_keys = ['dimensions', 'frame'];
+
+        // Iterate through all properties of the main model
+        for (const key in mainModel) {
+            if(ignore_keys.includes(key)){
+                continue;
+            }
+
+            if (mainModel.hasOwnProperty(key)) {
+                const element = mainModel[key];
+
+                //  element.frame.constructor.name check if the name is in allAvailableShapes
+                if (allAvailableShapes.includes(element.constructor.name)) {
+                    // If the element is a model, add it to the list
+                    models.push(element);
+
+                    // If the model contains child models, extract recursively
+                    if (element.models) {
+                        models.push(...extractModelsFromParentModelRecursive(element.models));
+                    }
+                } else if (Array.isArray(element)) {
+                    // If the element is an array, recursively extract models from it
+                    element.forEach((item) => {
+                        models.push(...extractModelsFromParentModelRecursive(item));
+                    });
+                } else if (typeof element === 'object') {
+                    // Recursively extract models from nested objects (non-array objects)
+                    models.push(...extractModelsFromParentModelRecursive(element));
+                }
+            }
+        }
+
+        return models;
+    }
+
 }

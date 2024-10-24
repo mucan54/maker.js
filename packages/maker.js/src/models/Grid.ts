@@ -2,14 +2,19 @@ namespace MakerJs.models {
     export class Grid implements IModel {
         public paths: IPathMap = {};
 
-        constructor(mainModel: IModel, unit: 'cm' | '5mm' = 'cm', shiftX: number = 0, shiftY: number = 0) {
+        constructor(mainModel: IModel, unit: '10cm' | '5cm' | '1cm' = '10cm', shiftX: number = 0, shiftY: number = 0) {
             // Measure the extents of the model to get its width and height
             const extents = MakerJs.measure.modelExtents(mainModel);
             const modelWidth = extents.high[0] - extents.low[0];  // Model's width
             const modelHeight = extents.high[1] - extents.low[1]; // Model's height
 
-            // Define grid spacing based on the unit
-            const spacing = unit === 'cm' ? 10 : 5; // 1cm = 10mm, or 5mm
+            // Define grid spacing based on the unit or 1mm
+            var spacing = 10;
+            if (unit === '5cm') {
+                spacing = 5;
+            } else if (unit === '1cm') {
+                spacing = 1;
+            }
 
             let index = 0;
 

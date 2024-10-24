@@ -32,7 +32,7 @@ namespace MakerJs.models {
 
             // Add background rectangle behind the caption
             const textLength = ((captionText || "Dimension").length + 4) * (fontSize); // Estimate the text length
-            const rectWidth = textLength * 1.5;
+            const rectWidth = textLength;
             const rectHeight = fontSize * 2;
 
             //@ts-ignore

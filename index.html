@@ -83,6 +83,10 @@
             stroke: white;
             stroke-width: 15px;
         }
+
+        #gray {
+            stroke-width: 1px;
+        }
     </style>
 </head>
 <body>
@@ -122,12 +126,16 @@
                     <!-- Radio buttons for 1cm or 5mm grid spacing -->
                     <div class="radio-options" x-show="mainFrame.showGrid">
                         <label>
-                            <input type="radio" name="gridSize" value="cm" x-model="mainFrame.gridUnit" @change="updateConfig()">
+                            <input type="radio" name="gridSize" value="10cm" x-model="mainFrame.gridUnit" @change="updateConfig()">
                             10cm
                         </label>
                         <label>
-                            <input type="radio" name="gridSize" value="5mm" x-model="mainFrame.gridUnit" @change="updateConfig()">
+                            <input type="radio" name="gridSize" value="5cm" x-model="mainFrame.gridUnit" @change="updateConfig()">
                             5cm
+                        </label>
+                        <label>
+                            <input type="radio" name="gridSize" value="1cm" x-model="mainFrame.gridUnit" @change="updateConfig()">
+                            1cm
                         </label>
 
                         <!-- Position Fields for Grid -->
@@ -237,6 +245,48 @@
             <h2 class="text-xl mb-2">JSON Output</h2>
             <textarea x-model="outputJson" x-on:change.debounce="fetchJson()" class="border rounded p-2 mt-2 w-full" rows="8"></textarea>
         </div>
+
+        <div class="mb-4" x-show="is_finalized">
+            <hr>
+            <h2 class="text-xl mb-2">Cost Calculation</h2>
+        <!-- Cost Calculation Table -->
+        <div class="mb-4">
+        <!-- Shape Width Height -->
+            <div class="mt-2">
+                <label>Shape Width (cm)</label>
+                <input type="number" x-model="cost.mainFrame.width" class="border rounded p-2 ml-2" disabled>
+            </div>
+            <div class="mt-2">
+                <label>Shape Height (cm)</label>
+                <input type="number" x-model="cost.mainFrame.height" class="border rounded p-2 ml-2" disabled>
+            </div>
+        <!-- Total Cut Distance -->
+            <div class="mt-2">
+                <label>Total Cut Distance (cm)</label>
+                <input type="number" x-model="cost.cutoutDistance" class="border rounded p-2 ml-2" disabled>
+            </div>
+        <!-- All Drill Holes -->
+            <div class="mt-2">
+                <label>All Drill Holes (Count : <span x-text="cost.dots.length"></span>)</label>
+                <table class="border rounded p-2 ml-2">
+                    <thead>
+                        <tr>
+                            <th>Dot Number</th>
+                            <th>Diameter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(dot, index) in cost.dots">
+                            <tr>
+                                <td x-text="index"></td>
+                                <td x-text="dot.radius"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </div>
     </div>
 
     <!-- SVG Output Section (Right) -->
@@ -257,6 +307,7 @@
             cutouts: [], // Initialize cutouts array
             dots: [], // Initialize dots array
             outputJson: "",
+            cost: {cutoutDistance: 0, dots: [], mainFrame: {width: 0, height: 0}},
             availableShapes: [], // initialize as empty array
             availableDots: [], // initialize as empty array
             is_finalized: false, // Track finalization state
@@ -462,7 +513,7 @@
                         const dotPositionX = mainShapeCenter.x - (dotCenter.x - dot.position.x);
                         const dotPositionY = mainShapeCenter.y - (dotCenter.y - dot.position.y);
 
-                        dotShape.layer = "red";
+                        dotShape.layer = "blue";
                         //remove frame
                         if(dotShape.models && dotShape.models['frame']) {
                             delete dotShape.models['frame'];
@@ -513,7 +564,7 @@
                     let shapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
                     options.strokeWidth = 3;
                     options.annotate = false;
-                    options.fontSize = Math.max((shapeHeight * 0.01), (shapeWidth * 0.01)) + 'mm';
+                    options.fontSize = Math.max((shapeHeight * 0.007), (shapeWidth * 0.007)) + 'mm';
 
                     if(this.mainFrame.showGrid && this.mainFrame.gridUnit) {
                         let grids= new makerjs.models.Grid(mainShape, this.mainFrame.gridUnit, this.mainFrame.gridPositionX || 0, this.mainFrame.gridPositionY || 0);
@@ -525,6 +576,11 @@
                             }
                         };
                     }
+
+                    if(this.is_finalized) {
+                        this.cost = makerjs.manager.calculateShapeTotalArea(mainShape);
+                    }
+
                     makerjs.model.center(mainShape);
                     makerjs.model.originate(mainShape);
                     const svg = makerjs.exporter.toSVG(mainShape, options);
