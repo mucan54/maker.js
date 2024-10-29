@@ -299,8 +299,6 @@
 </div>
 
 <script>
-    var makerjs = require('makerjs');
-
     function shapeConfigurator() {
         return {
             mainFrame: { shapeType: "", shapeParameters: {}, showDimensions: true, showGrid: false }, // Initialize main frame
@@ -391,7 +389,8 @@
                 this.outputJson = JSON.stringify({
                     mainFrame: this.mainFrame,
                     cutouts: this.cutouts,
-                    dots: this.dots
+                    dots: this.dots,
+                    is_finalized: this.is_finalized
                 }, null, 2);
 
                 localStorage.setItem('shapeConfigurator', JSON.stringify({
@@ -439,7 +438,7 @@
 
             renderSvg() {
                 const svgContainer = document.getElementById('svgOutput');
-                svgContainer.innerHTML = makerjs.shaper.finalizeShape(this);
+                svgContainer.innerHTML = makerjs.shaper.finalizeShape(this.outputJson);
             }
 
         };

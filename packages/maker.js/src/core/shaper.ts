@@ -81,6 +81,7 @@ namespace MakerJs.shaper {
     }
 
     export function finalizeShape(mainShapeData: any): any {
+        mainShapeData = JSON.parse(mainShapeData);
         let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
         if (!mainShape) return;
         let cutoutShapes = MakerJs.shaper.shapeMerger(mainShapeData.cutouts, mainShapeData.is_finalized);
