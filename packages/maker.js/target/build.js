@@ -39,5 +39,5 @@ b.bundle((err, buf) => {
     const nodeFooter = fs.readFileSync('./target/node-requires.js', utf8);
     fs.writeFileSync(js, nodeCode + nodeFooter, utf8);
 
-    console.log("Maker.js built successfully for AMD compatibility.");
+    console.log("Maker.js,  bezier-js built successfully for AMD compatibility.");
 });
