@@ -46,6 +46,7 @@
     "src/core/layout.ts",
     "src/core/manager.ts",
     "src/core/dimention.ts",
+    "src/core/shaper.ts",
     "src/models/BezierCurve.ts",
     "src/models/Ellipse.ts",
     "src/models/ConnectTheDots.ts",

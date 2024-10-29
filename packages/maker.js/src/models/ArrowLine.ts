@@ -20,7 +20,7 @@ namespace MakerJs.models {
             const shapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
 
             // Adjust font size based on the length of the line
-            const fontSize =  Math.max((shapeHeight * 0.01), (shapeWidth * 0.01)); // Font size is 2% of the line, min. 10px
+            const fontSize = MakerJs.manager.defaultFontSize ?? Math.max((shapeHeight * 0.01), (shapeWidth * 0.01)); // Font size is 2% of the line, min. 10px
 
             // Calculate the angle between the first and second points
             const dx = SecondArrowLocation[0] - FirstArrowLocation[0];
@@ -31,7 +31,7 @@ namespace MakerJs.models {
             const midPoint = MakerJs.point.average(FirstArrowLocation, SecondArrowLocation);
 
             // Add background rectangle behind the caption
-            const textLength = ((captionText || "Dimension").length + 4) * (fontSize); // Estimate the text length
+            const textLength = ((captionText || "Dimension").length + 8) * (fontSize); // Estimate the text length
             const rectWidth = textLength;
             const rectHeight = fontSize * 2;
 

@@ -99,14 +99,14 @@
         <!-- Main Frame Shape Selection -->
         <div class="mb-4">
             <label for="mainShape" class="block">Main Shape</label>
-            <select x-model="mainFrame.shapetype" @change="initializeParameters('mainFrame'); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
+            <select x-model="mainFrame.shapeType" @change="initializeParameters('mainFrame'); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
                 <option value="">Select Shape</option>
                 <template x-for="shape in availableShapes">
-                    <option :value="shape.code" x-text="shape.name" :selected="shape.code == mainFrame.shapetype"></option>
+                    <option :value="shape.code" x-text="shape.name" :selected="shape.code == mainFrame.shapeType"></option>
                 </template>
             </select>
-            <div x-show="mainFrame.shapetype">
-                <template x-for="param in getParameters(mainFrame.shapetype, 'shape')">
+            <div x-show="mainFrame.shapeType">
+                <template x-for="param in getParameters(mainFrame.shapeType, 'shape')">
                     <div class="mt-2">
                         <label x-text="param.title"></label>
                         <input type="number" :min="param.min" :max="param.max" x-model="mainFrame.shapeParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
@@ -157,10 +157,10 @@
             <h2 class="text-xl mb-2">Cutouts</h2>
             <template x-for="(cutout, index) in cutouts" :key="index">
                 <div class="mb-2">
-                    <select x-model="cutout.shapetype" @change="initializeParameters('cutouts', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
+                    <select x-model="cutout.shapeType" @change="initializeParameters('cutouts', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
                         <option value="">Select Shape</option>
                         <template x-for="shape in availableShapes">
-                            <option :value="shape.code" x-text="shape.name" :selected="shape.code == cutout.shapetype"></option>
+                            <option :value="shape.code" x-text="shape.name" :selected="shape.code == cutout.shapeType"></option>
                         </template>
                     </select>
 
@@ -175,7 +175,7 @@
                     </div>
 
                     <!-- Shape Parameters for Cutouts -->
-                    <template x-for="param in getParameters(cutout.shapetype, 'shape')">
+                    <template x-for="param in getParameters(cutout.shapeType, 'shape')">
                         <div class="mt-2">
                             <label x-text="param.title"></label>
                             <input type="number" :min="param.min" :max="param.max"  x-model="cutout.shapeParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
@@ -196,10 +196,10 @@
             <h2 class="text-xl mb-2">Dots</h2>
             <template x-for="(dot, index) in dots" :key="index">
                 <div class="mb-2">
-                    <select x-model="dot.dotType" @change="initializeParameters('dots', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
+                    <select x-model="dot.shapeType" @change="initializeParameters('dots', index); renderSvg()" class="border rounded p-2" :disabled="is_finalized">
                         <option value="">Select Dot</option>
-                        <template x-for="dotType in availableDots">
-                            <option :value="dotType.code" x-text="dotType.name" :selected="dotType.code == dot.dotType"></option>
+                        <template x-for="shapeType in availableDots">
+                            <option :value="shapeType.code" x-text="shapeType.name" :selected="shapeType.code == dot.shapeType"></option>
                         </template>
                     </select>
 
@@ -214,10 +214,10 @@
                     </div>
 
                     <!-- Dot Parameters -->
-                    <template x-for="param in getParameters(dot.dotType, 'dot')">
+                    <template x-for="param in getParameters(dot.shapeType, 'dot')">
                         <div class="mt-2">
                             <label x-text="param.title"></label>
-                            <input type="number" :min="param.min" :max="param.max" x-model="dot.dotParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
+                            <input type="number" :min="param.min" :max="param.max" x-model="dot.shapeParameters[param.title]" @input="updateConfig()" class="border rounded p-2 ml-2" :disabled="is_finalized">
                         </div>
                     </template>
                     <button @click="removeDot(index)" :class="{'disabled-button': is_finalized}" class="bg-red-500 text-white p-1 rounded ml-2" :disabled="is_finalized">Remove</button>
@@ -303,7 +303,7 @@
 
     function shapeConfigurator() {
         return {
-            mainFrame: { shapetype: "", shapeParameters: {}, showDimensions: true, showGrid: false }, // Initialize main frame
+            mainFrame: { shapeType: "", shapeParameters: {}, showDimensions: true, showGrid: false }, // Initialize main frame
             cutouts: [], // Initialize cutouts array
             dots: [], // Initialize dots array
             outputJson: "",
@@ -345,7 +345,7 @@
             },
 
             addCutout() {
-                this.cutouts.push({ shapetype: '', shapeParameters: {}, position: { x: 0, y: 0 } });
+                this.cutouts.push({ shapeType: '', shapeParameters: {}, position: { x: 0, y: 0 } });
                 this.updateConfig();
             },
 
@@ -355,7 +355,7 @@
             },
 
             addDot() {
-                this.dots.push({ dotType: '', dotParameters: {}, position: { x: 0, y: 0 } });
+                this.dots.push({ shapeType: '', shapeParameters: {}, position: { x: 0, y: 0 } });
                 this.updateConfig();
             },
             cleanup() {
@@ -365,7 +365,7 @@
                 }
                 // Clear persisted state and reset settings
                 localStorage.clear();
-                this.mainFrame = { shapetype: "", shapeParameters: {} };
+                this.mainFrame = { shapeType: "", shapeParameters: {} };
                 this.cutouts = [];
                 this.dots = [];
                 this.is_finalized = false;
@@ -379,7 +379,7 @@
 
             fetchJson() {
                 jsonData = JSON.parse(this.outputJson);
-                this.mainFrame.shapetype = jsonData.mainFrame.shapetype;
+                this.mainFrame.shapeType = jsonData.mainFrame.shapeType;
                 this.mainFrame.shapeParameters = jsonData.mainFrame.shapeParameters;
                 this.mainFrame.showDimensions = jsonData.mainFrame.showDimensions;
                 this.cutouts = jsonData.cutouts;
@@ -405,22 +405,22 @@
             },
 
             initializeParameters(type, index = null) {
-                if (type === 'mainFrame' && this.mainFrame.shapetype) {
+                if (type === 'mainFrame' && this.mainFrame.shapeType) {
                     this.mainFrame.shapeParameters = {};
-                    this.getParameters(this.mainFrame.shapetype, 'shape').forEach(param => {
+                    this.getParameters(this.mainFrame.shapeType, 'shape').forEach(param => {
                         this.mainFrame.shapeParameters[param.title] = param.value;
                     });
-                } else if (type === 'cutouts' && index !== null && this.cutouts[index].shapetype) {
+                } else if (type === 'cutouts' && index !== null && this.cutouts[index].shapeType) {
                     this.cutouts[index].shapeParameters = {};
-                    this.getParameters(this.cutouts[index].shapetype, 'shape').forEach(param => {
+                    this.getParameters(this.cutouts[index].shapeType, 'shape').forEach(param => {
                         this.cutouts[index].shapeParameters[param.title] = param.value / 2;
                     });
 
-                } else if (type === 'dots' && index !== null && this.dots[index].dotType) {
-                    this.dots[index].dotParameters = {};
-                    this.getParameters(this.dots[index].dotType, 'dot').forEach(param => {
+                } else if (type === 'dots' && index !== null && this.dots[index].shapeType) {
+                    this.dots[index].shapeParameters = {};
+                    this.getParameters(this.dots[index].shapeType, 'dot').forEach(param => {
                         if(param.title == 'Scale') {param.value = 1;}
-                        this.dots[index].dotParameters[param.title] = param.value;
+                        this.dots[index].shapeParameters[param.title] = param.value;
                     });
 
                     this.dots[index].position = {
@@ -439,153 +439,7 @@
 
             renderSvg() {
                 const svgContainer = document.getElementById('svgOutput');
-                svgContainer.innerHTML = '';
-
-                let mainShape = makerjs.manager.fetchMainModel(this.mainFrame.shapetype, this.mainFrame.shapeParameters);
-                console.log(mainShape);
-                if (!mainShape) return;
-
-                const mainShapeExtents = makerjs.measure.modelExtents(mainShape);
-
-                let cutoutShapes = {};
-
-                const mainShapeCenter = {
-                    x: (mainShapeExtents.high[0] + mainShapeExtents.low[0]) / 2,
-                    y: (mainShapeExtents.high[1] + mainShapeExtents.low[1]) / 2,
-                };
-
-                var allCutouts = {};
-                var cutoutDimensions = {};
-                var index = 0;
-                this.cutouts.forEach(cutout => {
-                    let cutoutShape = makerjs.manager.getModel(cutout.shapetype, cutout.shapeParameters);
-                    if (cutoutShape) {
-
-                        const cutoutExtents = makerjs.measure.modelExtents(cutoutShape);
-                        const cutoutCenter = {
-                            x: (cutoutExtents.high[0] + cutoutExtents.low[0]) / 2,
-                            y: (cutoutExtents.high[1] + cutoutExtents.low[1]) / 2,
-                        };
-
-                        const positionX = mainShapeCenter.x - (cutoutCenter.x - cutout.position.x);
-                        const positionY = mainShapeCenter.y - (cutoutCenter.y - cutout.position.y);
-
-                        allCutouts[cutout.shapetype] = makerjs.model.move(cutoutShape, [positionX, positionY]);
-                        cutoutShape.layer = "red";
-                        if(!this.is_finalized) {
-                            cutoutShapes = new makerjs.model.combine(
-                                makerjs.model.move(cutoutShape, [positionX, positionY]),
-                                cutoutShapes,
-                                true,
-                                true,
-                                true,
-                                true
-                            );
-                        } else {
-                            cutoutShapes = new makerjs.model.combineUnion(
-                                makerjs.model.move(cutoutShape, [positionX, positionY]),
-                                cutoutShapes
-                            );
-                        }
-
-                        if(cutout.showDimensions) {
-                            var dimension = makerjs.dimension.applyDimensions(cutout.shapetype, this.getParamsArray(cutout.shapeParameters));
-                            dimension.layer = "red";
-                            cutoutDimensions[cutout.shapetype+index] = makerjs.model.move(dimension, [positionX, positionY]);
-                            index++;
-                        }
-                    }
-                });
-
-                this.dots.forEach(dot => {
-                    if(!dot.dotType) return;
-                    let dotShape = makerjs.manager.getModel(dot.dotType, dot.dotParameters);
-                    //center the dot
-                    makerjs.model.center(dotShape);
-                    makerjs.model.originate(dotShape);
-                    if (dotShape) {
-                        const dotExtents = makerjs.measure.modelExtents(dotShape);
-                        const dotCenter = {
-                            x: (dotExtents.high[0] + dotExtents.low[0]) / 2,
-                            y: (dotExtents.high[1] + dotExtents.low[1]) / 2,
-                        };
-
-                        const dotPositionX = mainShapeCenter.x - (dotCenter.x - dot.position.x);
-                        const dotPositionY = mainShapeCenter.y - (dotCenter.y - dot.position.y);
-
-                        dotShape.layer = "blue";
-                        //remove frame
-                        if(dotShape.models && dotShape.models['frame']) {
-                            delete dotShape.models['frame'];
-                        }
-                        if(!this.is_finalized) {
-                            cutoutShapes = new makerjs.model.combine(
-                                makerjs.model.move(dotShape, [dotPositionX, dotPositionY]),
-                                cutoutShapes,
-                                true,
-                                true,
-                                true,
-                                true
-                            );
-                        } else {
-                            cutoutShapes = new makerjs.model.combineUnion(
-                                makerjs.model.move(dotShape, [dotPositionX, dotPositionY]),
-                                cutoutShapes
-                            );
-                        }
-                    }
-                });
-
-                if(!this.is_finalized) {
-                    mainShape = makerjs.model.combine(mainShape, cutoutShapes, true, true, true, true);
-                } else {
-                    mainShape = makerjs.model.combineSubtraction(
-                        mainShape,
-                        cutoutShapes
-                    );
-                }
-
-                //makerjs.dimension.dimensionAddtoModel = false;
-                if(this.mainFrame.showDimensions) {
-                    var dimensions = makerjs.dimension.applyDimensions(this.mainFrame.shapetype, this.getParamsArray(this.mainFrame.shapeParameters));
-                    console.log(dimensions);
-                    makerjs.model.addModel(mainShape, dimensions, 'dimensions');
-                }
-
-                if(cutoutDimensions) {
-                    for (const [key, value] of Object.entries(cutoutDimensions)) {
-                        makerjs.model.addModel(mainShape, value, 'cutout_dimensions');
-                    }
-                }
-
-                if (mainShape) {
-                    const options = {};
-                    let shapeWidth = mainShapeExtents.high[0] - mainShapeExtents.low[0];
-                    let shapeHeight = mainShapeExtents.high[1] - mainShapeExtents.low[1];
-                    options.strokeWidth = 3;
-                    options.annotate = false;
-                    options.fontSize = Math.max((shapeHeight * 0.007), (shapeWidth * 0.007)) + 'mm';
-
-                    if(this.mainFrame.showGrid && this.mainFrame.gridUnit) {
-                        let grids= new makerjs.models.Grid(mainShape, this.mainFrame.gridUnit, this.mainFrame.gridPositionX || 0, this.mainFrame.gridPositionY || 0);
-                        grids.layer = "gray";
-                        mainShape = {
-                            models : {
-                                frame: grids,
-                                shape: mainShape,
-                            }
-                        };
-                    }
-
-                    if(this.is_finalized) {
-                        this.cost = makerjs.manager.calculateShapeTotalArea(mainShape);
-                    }
-
-                    makerjs.model.center(mainShape);
-                    makerjs.model.originate(mainShape);
-                    const svg = makerjs.exporter.toSVG(mainShape, options);
-                    svgContainer.innerHTML = svg;
-                }
+                svgContainer.innerHTML = makerjs.shaper.finalizeShape(this);
             }
 
         };

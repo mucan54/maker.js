@@ -39,6 +39,8 @@ namespace MakerJs.manager {
         "RadialDots"
     ];
 
+    export var defaultFontSize = 10;
+
     export function getAllModels(): any {
         const shapeNames = allAvailableShapes;
         const shapes = {};
@@ -216,4 +218,14 @@ namespace MakerJs.manager {
         return models;
     }
 
+    export function getMainShapeCenter(): any
+    {
+        let mainShape = getMainModel();
+        let mainShapeExtents = MakerJs.measure.modelExtents(mainShape);
+        return {
+            x: (mainShapeExtents.high[0] + mainShapeExtents.low[0]) / 2,
+            y: (mainShapeExtents.high[1] + mainShapeExtents.low[1]) / 2,
+        };
+
+    }
 }
