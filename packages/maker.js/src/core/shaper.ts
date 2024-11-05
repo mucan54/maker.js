@@ -3,7 +3,7 @@ namespace MakerJs.shaper {
     function getParamsArray(parameters) {
         const parametersArray = [];
         for (const key in parameters) {
-            parametersArray.push(parseInt(parameters[key]));
+            parametersArray.push(parseFloat(parameters[key]));
         }
 
         return parametersArray;
