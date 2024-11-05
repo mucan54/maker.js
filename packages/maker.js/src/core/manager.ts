@@ -39,6 +39,31 @@ namespace MakerJs.manager {
         "RadialDots"
     ];
 
+    const shapesDots = {
+        Rectangle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Circle: ["GridDots", "RadialDots", "CustomDot"],
+        RightAngledTriangle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        RightAngledTriangleMirrored: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        ArchedRectangle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        RoundedRectangle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Egg: ["GridDots", "RadialDots", "CustomDot"],
+        Ellipse: ["GridDots", "RadialDots", "CustomDot"],
+        FlatOval: ["GridDots", "RadialDots", "CustomDot"],
+        IsoscelesTriangle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Arrow: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        HalfCircle: ["GridDots", "RadialDots", "CustomDot"],
+        QuarterCircle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Hexagon: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Polygon: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Octagon: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Star: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        SlopedRectangle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        SlopedRightRectangle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Trapezoid: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        Heart: ["GridDots", "RadialDots", "CustomDot"],
+        Kite: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"]
+    };
+
     export var defaultFontSize = 10;
 
     export function getAllModels(): any {
@@ -130,7 +155,11 @@ namespace MakerJs.manager {
         return shapesWithoutDot;
     }
 
-    export function getAllDots(): any {
+    export function getAllDots(shapeName:string = null): any {
+        if (shapeName && shapesDots[shapeName]) {
+            return shapesDots[shapeName];
+        }
+
         const allShapes = getAllModels();
         const shapesWithDot = [];
 
