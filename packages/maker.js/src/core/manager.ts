@@ -155,17 +155,19 @@ namespace MakerJs.manager {
         return shapesWithoutDot;
     }
 
-    export function getAllDots(shapeName:string = null): any {
-        if (shapeName && shapesDots[shapeName]) {
-            return shapesDots[shapeName];
-        }
-
+    export function getAllDots(mainShapeName:string = null): any {
         const allShapes = getAllModels();
         const shapesWithDot = [];
 
         for (const shapeName in allShapes) {
             if (allShapes.hasOwnProperty(shapeName) && shapeName.includes("Dot")) {
-                shapesWithDot.push(allShapes[shapeName]);
+                if (mainShapeName && shapesDots[mainShapeName] && shapesDots[mainShapeName].includes(shapeName)) {
+                    shapesWithDot.push(allShapes[shapeName]);
+                }
+
+                if(!mainShapeName){
+                    shapesWithDot.push(allShapes[shapeName]);
+                }
             }
         }
 
