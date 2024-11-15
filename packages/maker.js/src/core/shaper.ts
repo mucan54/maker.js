@@ -144,6 +144,28 @@ namespace MakerJs.shaper {
         }
     }
 
+    export function getCostOfShape(mainShapeData: any): any {
+        mainShapeData = JSON.parse(mainShapeData);
+        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
+        if (!mainShape) return;
+        let cutoutShapes = MakerJs.shaper.shapeMerger(mainShapeData.cutouts, true);
+        let cutoutShape = MakerJs.shaper.shapeMerger(mainShapeData.dots, true, cutoutShapes);
+
+        mainShape = MakerJs.model.combineSubtraction(
+            mainShape,
+            cutoutShape
+        );
+
+        if (mainShape) {
+            let mainShapeExtents = MakerJs.measure.modelExtents(mainShape);
+            if (!mainShapeExtents) console.log("Model extents not found")
+            MakerJs.model.center(mainShape);
+            MakerJs.model.originate(mainShape);
+
+            return MakerJs.manager.calculateShapeTotalArea(mainShape);
+        }
+    }
+
     export function getShapePosition(shape: any): any {
         let shapeModel = MakerJs.manager.getModel(shape.shapeType, shape.shapeParameters);
         if (!shapeModel) { console.log("Model not found") }
