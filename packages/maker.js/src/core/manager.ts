@@ -94,7 +94,7 @@ namespace MakerJs.manager {
              if(typeof parameters === 'object'){
                 const parametersArray = [];
                 for (const key in parameters) {
-                    parametersArray.push(parseFloat(parameters[key]));
+                    parametersArray.push(parseFloat(parameters[key]?.value ?? parameters[key]));
                 }
                 parameters = parametersArray;
              } else {
