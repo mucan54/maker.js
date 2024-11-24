@@ -80,6 +80,24 @@ namespace MakerJs.shaper {
         return mergedDimensions;
     }
 
+    export function finalShapeModel(mainShapeData: any): any {
+        mainShapeData = JSON.parse(mainShapeData);
+        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
+        if (!mainShape) return;
+        let cutoutShapes = MakerJs.shaper.shapeMerger(mainShapeData.cutouts, true);
+        let cutoutShape = MakerJs.shaper.shapeMerger(mainShapeData.dots, true, cutoutShapes);
+
+        mainShape = MakerJs.model.combineSubtraction(
+            mainShape,
+            cutoutShape
+        );
+
+        MakerJs.model.center(mainShape);
+        MakerJs.model.originate(mainShape);
+
+        return mainShape;
+    }
+
     export function finalizeShape(mainShapeData: any): any {
         mainShapeData = JSON.parse(mainShapeData);
         let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
