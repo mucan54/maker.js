@@ -166,6 +166,18 @@ namespace MakerJs.shaper {
         }
     }
 
+    export function getShapeTotalLength(shapeData: any): any {
+        var shapeModel = MakerJs.manager.getModel(shapeData.shapeType, shapeData.shapeParameters);
+        if (!shapeModel) { console.log("Model not found") }
+
+        let totalCutDistance = 0;
+        for(const key in shapeModel.paths){
+            totalCutDistance += MakerJs.measure.pathLength(shapeModel.paths[key]);
+        }
+
+        return totalCutDistance;
+    }
+
     export function getShapePosition(shape: any): any {
         let shapeModel = MakerJs.manager.getModel(shape.shapeType, shape.shapeParameters);
         if (!shapeModel) { console.log("Model not found") }
