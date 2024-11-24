@@ -178,6 +178,18 @@ namespace MakerJs.shaper {
         return totalCutDistance;
     }
 
+    export function getShapeArea(shapeData: any): any {
+        var shapeModel = MakerJs.manager.getModel(shapeData.shapeType, shapeData.shapeParameters);
+        if (!shapeModel) { console.log("Model not found") }
+
+        //extend the model and get width and height then calculate area
+        const shapeExtents = MakerJs.measure.modelExtents(shapeModel);
+        const shapeWidth = shapeExtents.high[0] - shapeExtents.low[0];
+        const shapeHeight = shapeExtents.high[1] - shapeExtents.low[1];
+
+        return shapeWidth * shapeHeight;
+    }
+
     export function getShapePosition(shape: any): any {
         let shapeModel = MakerJs.manager.getModel(shape.shapeType, shape.shapeParameters);
         if (!shapeModel) { console.log("Model not found") }
