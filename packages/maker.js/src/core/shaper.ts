@@ -162,6 +162,33 @@ namespace MakerJs.shaper {
         }
     }
 
+    export function getFinalShapeOnly(mainShapeData: any): any {
+        mainShapeData = JSON.parse(mainShapeData);
+        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
+        if (!mainShape) return;
+        let cutoutShapes = MakerJs.shaper.shapeMerger(mainShapeData.cutouts, true);
+        let cutoutShape = MakerJs.shaper.shapeMerger(mainShapeData.dots, true, cutoutShapes);
+        mainShape = MakerJs.model.combineSubtraction(
+            mainShape,
+            cutoutShape
+        );
+
+        if (mainShape) {
+            let mainShapeExtents = MakerJs.measure.modelExtents(mainShape);
+            if (!mainShapeExtents) console.log("Model extents not found")
+            const options = {};
+            // @ts-ignore
+            options.strokeWidth = 3;
+            // @ts-ignore
+            options.annotate = false;
+
+            MakerJs.model.center(mainShape);
+            MakerJs.model.originate(mainShape);
+
+            return MakerJs.exporter.toSVG(mainShape, options);
+        }
+    }
+
     export function getCostOfShape(mainShapeData: any): any {
         mainShapeData = JSON.parse(mainShapeData);
         let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
