@@ -128,8 +128,9 @@ namespace MakerJs.manager {
         return parameters;
     }
 
-    export function fetchMainModel(name: string, parameters: any[]): any {
+    export function fetchMainModel(name: string, parameters: any[], unitType = "cm"): any {
         let mainModel = getModel(name, parameters);
+        mainModel.units = unitType;
         managerMainModel = mainModel;
         return mainModel;
     }
@@ -174,7 +175,8 @@ namespace MakerJs.manager {
         return shapesWithDot;
     }
 
-    export function calculateShapeTotalArea(mainShape: IModel): any {
+    export function calculateShapeTotalArea(mainShape: IModel, unit = null): any {
+
         let cost = {};
         let shapeWidth = MakerJs.measure.modelExtents(getMainModel()).high[0] - MakerJs.measure.modelExtents(getMainModel()).low[0];
         let shapeHeight = MakerJs.measure.modelExtents(getMainModel()).high[1] - MakerJs.measure.modelExtents(getMainModel()).low[1];
@@ -202,11 +204,20 @@ namespace MakerJs.manager {
             }
         });
 
+        if(unit) {
+            const mainModelUnit = getMainModel().units ?? "cm";
+            const conversion = MakerJs.units.conversionScale(mainModelUnit, unit);
+            shapeWidth *= conversion;
+            shapeHeight *= conversion;
+            totalCutDistance *= conversion;
+        }
+
 
         cost = {
             mainFrame : {width: Math.round(shapeWidth), height: Math.round(shapeHeight)},
             cutoutDistance: Math.round(totalCutDistance),
-            dots: validDots
+            dots: validDots,
+            unit: unit ?? "cm"
         }
 
         return cost;

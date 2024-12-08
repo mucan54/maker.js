@@ -1,5 +1,7 @@
 namespace MakerJs.shaper {
 
+    const MAIN_SHAPE_DEFAULT_UNIT = "cm";
+
     function getParamsArray(parameters) {
         const parametersArray = [];
         for (const key in parameters) {
@@ -82,7 +84,7 @@ namespace MakerJs.shaper {
 
     export function finalShapeModel(mainShapeData: any): any {
         mainShapeData = JSON.parse(mainShapeData);
-        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
+        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters, mainShapeData.mainFrame.unitType ?? MAIN_SHAPE_DEFAULT_UNIT);
         if (!mainShape) return;
         let cutoutShapes = MakerJs.shaper.shapeMerger(mainShapeData.cutouts, true);
         let cutoutShape = MakerJs.shaper.shapeMerger(mainShapeData.dots, true, cutoutShapes);
@@ -100,7 +102,7 @@ namespace MakerJs.shaper {
 
     export function finalizeShape(mainShapeData: any): any {
         mainShapeData = JSON.parse(mainShapeData);
-        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
+        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters, mainShapeData.mainFrame.unitType ?? MAIN_SHAPE_DEFAULT_UNIT);
         if (!mainShape) return;
         let cutoutShapes = MakerJs.shaper.shapeMerger(mainShapeData.cutouts, mainShapeData.is_finalized);
         let cutoutShape = MakerJs.shaper.shapeMerger(mainShapeData.dots, mainShapeData.is_finalized, cutoutShapes);
@@ -164,7 +166,7 @@ namespace MakerJs.shaper {
 
     export function getFinalShapeOnly(mainShapeData: any): any {
         mainShapeData = JSON.parse(mainShapeData);
-        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
+        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters, mainShapeData.mainFrame.unitType ?? MAIN_SHAPE_DEFAULT_UNIT);
         if (!mainShape) return;
         let cutoutShapes = MakerJs.shaper.shapeMerger(mainShapeData.cutouts, true);
         let cutoutShape = MakerJs.shaper.shapeMerger(mainShapeData.dots, true, cutoutShapes);
@@ -189,9 +191,9 @@ namespace MakerJs.shaper {
         }
     }
 
-    export function getCostOfShape(mainShapeData: any): any {
+    export function getCostOfShape(mainShapeData: any, unit = null): any {
         mainShapeData = JSON.parse(mainShapeData);
-        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters);
+        let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters, mainShapeData.mainFrame.unitType ?? MAIN_SHAPE_DEFAULT_UNIT);
         if (!mainShape) return;
         let cutoutShapes = MakerJs.shaper.shapeMerger(mainShapeData.cutouts, true);
         let cutoutShape = MakerJs.shaper.shapeMerger(mainShapeData.dots, true, cutoutShapes);
@@ -207,7 +209,7 @@ namespace MakerJs.shaper {
             MakerJs.model.center(mainShape);
             MakerJs.model.originate(mainShape);
 
-            return MakerJs.manager.calculateShapeTotalArea(mainShape);
+            return MakerJs.manager.calculateShapeTotalArea(mainShape, unit);
         }
     }
 
