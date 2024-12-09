@@ -130,7 +130,7 @@ namespace MakerJs.manager {
 
     export function fetchMainModel(name: string, parameters: any[], unitType = "cm"): any {
         let mainModel = getModel(name, parameters);
-        mainModel.units = unitType;
+        mainModel.units = unitType ?? "cm";
         managerMainModel = mainModel;
         return mainModel;
     }
