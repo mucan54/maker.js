@@ -1,4 +1,3 @@
-
 namespace MakerJs.models {
 
     export class Trapezoid implements IModel {
@@ -15,9 +14,9 @@ namespace MakerJs.models {
     }
 
     (<IKit>Trapezoid).metaParameters = [
-        { title: "Width Bottom", type: "range", min: 1, max: 100, value: 40 },
-        { title: "Width Top", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        { title: "Width Bottom", type: "range", unit: "float", min: 1, max: 100, value: 40 },
+        { title: "Width Top", type: "range", unit: "float", min: 1, max: 100, value: 50 },
+        { title: "Height", type: "range", unit: "float", min: 1, max: 100, value: 50 }
     ];
 
 }

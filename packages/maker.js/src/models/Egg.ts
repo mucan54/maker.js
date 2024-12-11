@@ -1,4 +1,3 @@
-
 namespace MakerJs.models {
 
     export class Egg implements IModel {
@@ -17,8 +16,8 @@ namespace MakerJs.models {
     }
 
     (<IKit>Egg).metaParameters = [
-        { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height", type: "range", min: 1, max: 100, value: 90 }
+        { title: "Width", type: "range", unit: "float", min: 1, max: 100, value: 50 },
+        { title: "Height", type: "range", unit: "float", min: 1, max: 100, value: 90 }
     ];
 
 }

@@ -193,8 +193,8 @@ namespace MakerJs.models {
     }
 
     (<IKit>Ellipse).metaParameters = [
-        { title: "radiusX", type: "range", min: 1, max: 50, value: 50 },
-        { title: "radiusY", type: "range", min: 1, max: 50, value: 25 }
+        { title: "Radius X", type: "range", unit: "float", min: 1, max: 50, value: 50 },
+        { title: "Radius Y", type: "range", unit: "float", min: 1, max: 50, value: 25 }
     ];
 
     export class EllipticArc implements IModel {
@@ -259,9 +259,9 @@ namespace MakerJs.models {
     }
 
     (<IKit>EllipticArc).metaParameters = [
-        { title: "startAngle", type: "range", min: 0, max: 90, value: 0 },
-        { title: "endAngle", type: "range", min: 90, max: 360, value: 180 },
-        { title: "radiusX", type: "range", min: 1, max: 50, value: 50 },
-        { title: "radiusY", type: "range", min: 1, max: 50, value: 25 }
+        { title: "Start Angle", type: "range", unit: "int", min: 0, max: 90, value: 0 },
+        { title: "End Angle", type: "range", unit: "int", min: 90, max: 360, value: 180 },
+        { title: "Radius X", type: "range", unit: "float", min: 1, max: 50, value: 50 },
+        { title: "Radius Y", type: "range", unit: "float", min: 1, max: 50, value: 25 }
     ];
 }

@@ -14,6 +14,6 @@ namespace MakerJs.models {
     }
 
     (<IKit>Octagon).metaParameters = [
-        { title: "Side Length", type: "range", min: 1, max: 100, value: 20 }
+        { title: "Side Length", type: "range", unit: "float", min: 1, max: 100, value: 20 }
     ];
 }

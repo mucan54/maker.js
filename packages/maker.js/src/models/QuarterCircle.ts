@@ -1,4 +1,3 @@
-
 namespace MakerJs.models {
 
     export class QuarterCircle implements IModel {
@@ -14,7 +13,7 @@ namespace MakerJs.models {
     }
 
     (<IKit>QuarterCircle).metaParameters = [
-        { title: "Radius", type: "range", min: 1, max: 100, value: 50 }
+        { title: "Radius", type: "range", unit: "float", min: 1, max: 100, value: 50 }
     ];
 
 }

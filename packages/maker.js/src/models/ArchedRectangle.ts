@@ -1,4 +1,3 @@
-
 namespace MakerJs.models {
 
     export class ArchedRectangle implements IModel {
@@ -15,8 +14,8 @@ namespace MakerJs.models {
     }
 
     (<IKit>ArchedRectangle).metaParameters = [
-        { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        { title: "Width", type: "range", unit: "float", min: 1, max: 100, value: 50 },
+        { title: "Height", type: "range", unit: "float", min: 1, max: 100, value: 50 }
     ];
 
 }

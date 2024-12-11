@@ -1,4 +1,3 @@
-
 namespace MakerJs.models {
 
     export class Kite implements IModel {
@@ -15,9 +14,9 @@ namespace MakerJs.models {
     }
 
     (<IKit>Kite).metaParameters = [
-        { title: "Width", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height Top", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height Bottom", type: "range", min: 1, max: 100, value: 50 }
+        { title: "Width", type: "range", unit: "float", min: 1, max: 100, value: 50 },
+        { title: "Height Top", type: "range", unit: "float", min: 1, max: 100, value: 50 },
+        { title: "Height Bottom", type: "range", unit: "float", min: 1, max: 100, value: 50 }
     ];
 
 }

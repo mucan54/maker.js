@@ -41,9 +41,9 @@
     }
     
     (<IKit>Star).metaParameters = [
-        { title: "number of sides", type: "range", min: 3, max: 24, value: 8 },
-        { title: "outer radius", type: "range", min: 1, max: 100, value: 50 },
-        { title: "inner radius", type: "range", min: 0, max: 100, value: 15 },
-        { title: "skip points (when inner radius is zero)", type: "range", min: 0, max: 12, value: 2 }
+        { title: "Number of sides", type: "range", unit:"int", min: 3, max: 24, value: 8 },
+        { title: "Outer radius", type: "range", min: 1, max: 100, value: 50 },
+        { title: "Inner radius", type: "range", min: 0, max: 100, value: 15 },
+        { title: "Skip points (when inner radius is zero)", type: "range", unit:"int", min: 0, max: 12, value: 2 }
     ];
 }

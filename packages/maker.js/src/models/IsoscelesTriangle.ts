@@ -1,4 +1,3 @@
-
 namespace MakerJs.models {
 
     export class IsoscelesTriangle implements IModel {
@@ -14,8 +13,8 @@ namespace MakerJs.models {
     }
 
     (<IKit>IsoscelesTriangle).metaParameters = [
-        { title: "Base", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Height", type: "range", min: 1, max: 100, value: 50 }
+        { title: "Base", type: "range", unit: "float", min: 1, max: 100, value: 50 },
+        { title: "Height", type: "range", unit: "float", min: 1, max: 100, value: 50 }
     ];
 
 }

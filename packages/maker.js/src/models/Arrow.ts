@@ -1,4 +1,3 @@
-
 namespace MakerJs.models {
 
     export class Arrow implements IModel {
@@ -18,10 +17,10 @@ namespace MakerJs.models {
     }
 
     (<IKit>Arrow).metaParameters = [
-        { title: "Stem Length", type: "range", min: 1, max: 100, value: 50 },
-        { title: "Stem Width", type: "range", min: 1, max: 100, value: 20 },
-        { title: "Head Length", type: "range", min: 1, max: 100, value: 30 },
-        { title: "Head Width", type: "range", min: 1, max: 100, value: 40 }
+        { title: "Stem Length", type: "range", unit: "float", min: 1, max: 100, value: 50 },
+        { title: "Stem Width", type: "range", unit: "float", min: 1, max: 100, value: 20 },
+        { title: "Head Length", type: "range", unit: "float", min: 1, max: 100, value: 30 },
+        { title: "Head Width", type: "range", unit: "float", min: 1, max: 100, value: 40 }
     ];
 
 }

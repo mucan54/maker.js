@@ -20,7 +20,7 @@ namespace MakerJs.models {
     }
 
     (<IKit>Ring).metaParameters = [
-        { title: "outer radius", type: "range", min: 0, max: 100, step: 1, value: 50 },
-        { title: "inner radius", type: "range", min: 0, max: 100, step: 1, value: 20 }
+        { title: "Outer Radius", type: "range", unit: "float", step: 1, min: 1, max: 100, value: 50 },
+        { title: "Inner Radius", type: "range", unit: "float", step: 1, min: 1, max: 100, value: 20 }
     ];
 }

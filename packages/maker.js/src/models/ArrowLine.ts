@@ -77,11 +77,11 @@ namespace MakerJs.models {
     }
 
     (<IKit>ArrowLine).metaParameters = [
-        { title: "First Arrow Location X", type: "range", min: 0, max: 500, value: 100 },
-        { title: "First Arrow Location Y", type: "range", min: 0, max: 500, value: 100 },
-        { title: "Second Arrow Location X", type: "range", min: 0, max: 500, value: 400 },
-        { title: "Second Arrow Location Y", type: "range", min: 0, max: 500, value: 100 },
-        { title: "Base Arrow Length", type: "range", min: 1, max: 100, value: 10 },
+        { title: "First Arrow Location X", type: "range", unit: "float", min: 0, max: 500, value: 100 },
+        { title: "First Arrow Location Y", type: "range", unit: "float", min: 0, max: 500, value: 100 },
+        { title: "Second Arrow Location X", type: "range", unit: "float", min: 0, max: 500, value: 400 },
+        { title: "Second Arrow Location Y", type: "range", unit: "float", min: 0, max: 500, value: 100 },
+        { title: "Base Arrow Length", type: "range", unit: "float", min: 1, max: 100, value: 10 },
         { title: "Caption", type: "text", value: "Dimension" }
     ];
 }

@@ -1,4 +1,3 @@
-
 namespace MakerJs.models {
 
     export class Hexagon implements IModel {
@@ -10,7 +9,7 @@ namespace MakerJs.models {
     }
 
     (<IKit>Hexagon).metaParameters = [
-        { title: "Side Length", type: "range", min: 1, max: 100, value: 50 }
+        { title: "Side Length", type: "range", unit: "float", min: 1, max: 100, value: 50 }
     ];
 
 }

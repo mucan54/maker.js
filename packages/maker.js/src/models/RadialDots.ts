@@ -17,9 +17,9 @@ namespace MakerJs.models {
     }
 
     (<IKit>RadialDots).metaParameters = [
-        { title: "Circle Diameter", type: "range", min: 1, max: 100, value: 31 },
-        { title: "Radial Dots", type: "range", min: 1, max: 36, value: 12 },
-        { title: "Dot Diameter", type: "range", min: 1, max: 10, value: 2 },
+        { title: "Circle Diameter", type: "range", unit: "float", min: 1, max: 100, value: 31 },
+        { title: "Radial Dots", type: "range", unit: "int", min: 1, max: 36, value: 12 },
+        { title: "Dot Diameter", type: "range", unit: "float", min: 1, max: 10, value: 2 }
     ];
 
 }

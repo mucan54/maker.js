@@ -845,6 +845,11 @@ namespace MakerJs {
         type: string;
 
         /**
+         * Optional unit of the parameter.
+         */
+        unit?: string;
+
+        /**
          * Optional minimum value of the range.
          */
         min?: number;

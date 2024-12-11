@@ -84,10 +84,10 @@ namespace MakerJs.models {
     }
 
     (<IKit>OvalArc).metaParameters = [
-        { title: "start angle", type: "range", min: -360, max: 360, step: 1, value: 180 },
-        { title: "end angle", type: "range", min: -360, max: 360, step: 1, value: 0 },
-        { title: "sweep", type: "range", min: 0, max: 100, step: 1, value: 50 },
-        { title: "radius", type: "range", min: 0, max: 100, step: 1, value: 15 },
-        { title: "self intersect", type: "bool", value: false }
+        { title: "Start Angle", type: "range", unit: "int", min: -360, max: 360, step: 1, value: 180 },
+        { title: "End Angle", type: "range", unit: "int", min: -360, max: 360, step: 1, value: 0 },
+        { title: "Sweep", type: "range", unit: "float", min: 0, max: 100, step: 1, value: 50 },
+        { title: "Radius", type: "range", unit: "float", min: 0, max: 100, step: 1, value: 15 },
+        { title: "Self Intersect", type: "bool", value: false }
     ];
 }

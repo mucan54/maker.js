@@ -9,6 +9,6 @@ namespace MakerJs.models {
     }
 
     (<IKit>Square).metaParameters = [
-        { title: "side", type: "range", min: 1, max: 100, value: 100 }
+        { title: "Side", type: "range", unit: "float", min: 1, max: 100, value: 100 }
     ];
 }

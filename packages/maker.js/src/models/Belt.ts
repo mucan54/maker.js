@@ -30,8 +30,8 @@ namespace MakerJs.models {
     }
 
     (<IKit>Belt).metaParameters = [
-        { title: "left radius", type: "range", min: 0, max: 100, value: 30 },
-        { title: "distance between centers", type: "range", min: 0, max: 100, value: 50 },
-        { title: "right radius", type: "range", min: 0, max: 100, value: 15 }
+        { title: "Left Radius", type: "range", unit: "float", min: 0, max: 100, value: 30 },
+        { title: "Distance Between Centers", type: "range", unit: "float", min: 0, max: 100, value: 50 },
+        { title: "Right Radius", type: "range", unit: "float", min: 0, max: 100, value: 15 }
     ];
 }

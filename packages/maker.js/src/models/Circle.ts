@@ -11,6 +11,6 @@ namespace MakerJs.models {
     }
 
     (<IKit>Circle).metaParameters = [
-        { title: "Diameter", type: "range", min: 1, max: 100, value: 80 }
+        { title: "Diameter", type: "range", unit: "float", min: 1, max: 100, value: 80 }
     ];
 }
