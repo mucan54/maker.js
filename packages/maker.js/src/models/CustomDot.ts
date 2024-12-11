@@ -10,15 +10,13 @@ namespace MakerJs.models {
          * @param diameter The diameter of the dot.
          * @param scale The scale factor to apply to the size.
          */
-        constructor(x: number, y: number, diameter: number) {
+        constructor(diameter: number) {
             const radius = (diameter / 2);
-            this.paths["customDot"] = new paths.Circle([x, y], radius);
+            this.paths["customDot"] = new paths.Circle([0, 0], radius);
         }
     }
 
     (<IKit>CustomDot).metaParameters = [
-        { title: "X Position", type: "range", min: 0, max: 100, value: 20 },
-        { title: "Y Position", type: "range", min: 0, max: 100, value: 30 },
         { title: "Diameter", type: "range", min: 1, max: 10, value: 2 }
     ];
 
