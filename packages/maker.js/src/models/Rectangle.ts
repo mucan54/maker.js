@@ -90,7 +90,7 @@ namespace MakerJs.models {
     }
 
     (<IKit>Rectangle).metaParameters = [
-        { title: "width", type: "range", min: 1, max: 100, value: 50 },
-        { title: "height", type: "range", min: 1, max: 100, value: 100 }
+        { title: "Length", type: "range", min: 1, max: 100, value: 50 },
+        { title: "Width", type: "range", min: 1, max: 100, value: 100 }
     ];
 }
