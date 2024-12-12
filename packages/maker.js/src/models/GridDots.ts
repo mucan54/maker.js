@@ -38,8 +38,8 @@ namespace MakerJs.models {
 
     // Meta parameters to define the input values for the grid
     (<IKit>GridDots).metaParameters = [
-        { title: "Number Horizontal", type: "range", min: 1, max: 10, value: 5 },
-        { title: "Number Vertical", type: "range", min: 1, max: 10, value: 5 },
+        { title: "Number Horizontal", type: "range", unit: "int", min: 1, max: 10, value: 5 },
+        { title: "Number Vertical", type: "range", unit: "int", min: 1, max: 10, value: 5 },
         { title: "Borehole Diameter", type: "range", min: 1, max: 20, value: 1 },
         { title: "Distance to Center of Hole", type: "range", min: 1, max: 10, value: 1 }
     ];
