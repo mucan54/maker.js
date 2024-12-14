@@ -27,9 +27,9 @@ namespace MakerJs.models {
             const uniquePoints = this.getUniquePoints(interSectionPoints);
 
             // Create the dots
-            for (let i = 0; i < interSectionPoints.length; i++) {
+            for (let i = 0; i < uniquePoints.length; i++) {
                 let dot = new MakerJs.paths.Circle([0, 0], dotDiameter / 2);
-                dot.origin = interSectionPoints[i];
+                dot.origin = uniquePoints[i];
                 this.paths[`dot${i}`] = dot;
             }
 
