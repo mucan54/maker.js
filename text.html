@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Font Viewer</title>
 
-    <!-- External Scripts -->
+    <!-- External Scripts - Note the order and versions -->
     <script src="https://cdn.jsdelivr.net/npm/bezier-js@2/bezier.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@0/dist/opentype.js"></script>
     <script src="docs/target/js/browser.maker.js"></script>
+
+    <!-- Alpine Plugins -->
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Alpine Core -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
@@ -133,7 +137,7 @@
     </style>
 </head>
 <body>
-<div class="container" x-data="fontViewer">
+<div class="container" x-data="fontViewer" x-init="init()">
     <!-- Controls Section -->
     <div class="controls">
         <h2>Font Controls</h2>
@@ -200,9 +204,8 @@
 </div>
 
 <script>
-    // Then define the Alpine.js component
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('fontViewer', () => ({
+    function fontViewer() {
+        return {
             filteredFonts: [],
             selectedFont: '',
             searchQuery: '',
@@ -216,9 +219,14 @@
             hasNextPage: true,
 
             init() {
+                // Make sure makerjs is available before proceeding
+                if (typeof makerjs === 'undefined') {
+                    console.error('Maker.js is not loaded');
+                    return;
+                }
+                
                 this.searchFonts();
                 
-                // Add click event listener to handle clicks outside
                 document.addEventListener('click', (e) => {
                     const fontSelector = document.querySelector('.font-selector');
                     if (!fontSelector.contains(e.target)) {
@@ -328,17 +336,14 @@
 
                 try {
                     this.error = '';
-                    // Ensure fontSize is treated as a number
                     const size = parseInt(this.fontSize, 10);
-                    console.log('Updating font size to:', size); // Debug log
+                    console.log('Updating font size to:', size);
                     
-                    // Update the text model with new text and size
                     await this.textModel.update(this.textContent, size);
-                    console.log('Text model updated'); // Debug log
+                    console.log('Text model updated');
                     
-                    // Re-render the updated model
                     await this.renderTextModel();
-                    console.log('Render complete'); // Debug log
+                    console.log('Render complete');
                 } catch (error) {
                     console.error('Error updating text:', error);
                     this.error = 'Error updating text: ' + error.message;
@@ -349,7 +354,6 @@
                 if (!this.textModel?.models) return;
 
                 try {
-                    // Ensure we're working with a valid model
                     const measurement = makerjs.measure.modelExtents(this.textModel);
                     if (!measurement) {
                         console.warn('No measurement available');
@@ -379,8 +383,8 @@
                     document.getElementById('svgOutput').innerHTML = '';
                 }
             }
-        }));
-    });
+        };
+    }
 </script>
 </body>
 </html>
