@@ -48,6 +48,8 @@
     "../src/core/manager.ts",
     "../src/core/dimention.ts",
     "../src/core/shaper.ts",
+    "../src/core/fontData.ts",
+    "../src/core/fontmanager.ts",
     "../src/models/BezierCurve.ts",
     "../src/models/Ellipse.ts",
     "../src/models/ConnectTheDots.ts",
