@@ -100,5 +100,6 @@
     "src/models/CustomDot.ts",
     "src/models/Grid.ts",
     "src/models/Line.ts",
+    "src/models/TextModel.ts",
   ]
 }

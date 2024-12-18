@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Font Viewer</title>
 
+    <!-- External Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bezier-js@2/bezier.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="docs/target/js/browser.maker.js"></script>
@@ -12,39 +13,122 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
         .container {
             display: flex;
-            padding: 20px;
             gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
+
         .controls {
             flex: 1;
             max-width: 300px;
         }
+
         .svg-section {
             flex: 2;
         }
-        select, input {
+
+        .font-selector {
+            position: relative;
+        }
+
+        .font-input {
             width: 100%;
             padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
             margin: 5px 0;
-            margin-bottom: 15px;
         }
+
+        .font-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 0 0 4px 4px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .font-dropdown.show {
+            display: block;
+        }
+
+        .font-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .font-option:hover {
+            background: #f0f0f0;
+        }
+
+        .loading-more {
+            padding: 8px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        .regular-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 5px 0 15px;
+        }
+
         label {
             display: block;
             margin-top: 10px;
             font-weight: bold;
+            color: #333;
         }
-        .loading {
-            color: blue;
-            margin-top: 10px;
+
+        h2 {
+            margin-top: 0;
+            color: #333;
+            margin-bottom: 20px;
         }
+
         #svgOutput {
             background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+
         #svgOutput svg {
             width: 100%;
             height: 100%;
+        }
+
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            color: #0366d6;
+            margin-top: 10px;
+            text-align: center;
         }
     </style>
 </head>
@@ -54,98 +138,238 @@
     <div class="controls">
         <h2>Font Controls</h2>
 
-        <label for="fontSelect">Select Font:</label>
-        <select
-                id="fontSelect"
-                x-model="selectedFont"
-                @change="loadSelectedFont()"
-        >
-            <option value="">Choose a font...</option>
-            <template x-for="font in fonts" :key="font">
-                <option :value="font" x-text="font"></option>
-            </template>
-        </select>
+        <div class="font-selector">
+            <label for="fontInput">Select Font:</label>
+            <input
+                    id="fontInput"
+                    type="text"
+                    class="font-input"
+                    x-model="searchQuery"
+                    @input.debounce.300ms="searchFonts()"
+                    @click="toggleDropdown()"
+                    :placeholder="selectedFont || 'Search fonts...'"
+            >
+            <div
+                    class="font-dropdown"
+                    :class="{ 'show': showDropdown }"
+                    @scroll.debounce.50ms="handleScroll($event.target)"
+            >
+                <template x-for="font in filteredFonts" :key="font.family">
+                    <div
+                            class="font-option"
+                            x-text="font.family"
+                            :style="'font-family: \'' + font.family + '\', Arial, sans-serif'"
+                            @click="selectFont(font.family)"
+                    ></div>
+                </template>
+                <div x-show="loading" class="loading-more">
+                    Loading more fonts...
+                </div>
+            </div>
+        </div>
 
         <label for="textInput">Enter Text:</label>
         <input
                 id="textInput"
                 type="text"
+                class="regular-input"
                 x-model="textContent"
                 placeholder="Enter text..."
-                @input="renderText()"
+                @input.debounce.100ms="updateText()"
         >
 
         <label for="sizeInput">Font Size:</label>
         <input
                 id="sizeInput"
                 type="number"
+                class="regular-input"
                 x-model="fontSize"
                 min="10"
                 max="200"
-                @input="renderText()"
+                @input.debounce.100ms="updateText()"
         >
 
-        <div x-show="loading" class="loading">Loading font...</div>
-        <div x-show="error" style="color: red; margin-top: 10px;" x-text="error"></div>
+        <div x-show="error" class="error" x-text="error"></div>
     </div>
 
     <!-- SVG Output Section -->
     <div class="svg-section">
         <h2>SVG Output</h2>
-        <div id="svgOutput" style="width: 600px; height: 600px; border: 1px solid #ccc;"></div>
+        <div id="svgOutput" style="width: 600px; height: 600px;"></div>
     </div>
 </div>
 
 <script>
+    // First, define the TextModel
+    if (!window.MakerJs) window.MakerJs = {};
+    if (!window.MakerJs.models) window.MakerJs.models = {};
+
+    MakerJs.models.TextModel = class TextModel {
+        models = {};
+        fontPromise = null;
+        currentText = '';
+        currentSize = 72;
+
+        constructor(fontFamily, text, fontSize, combine = false, centerCharacterOrigin = false, bezierAccuracy = undefined, opentypeOptions = undefined) {
+            this.fontFamily = fontFamily;
+            this.currentText = text;
+            this.currentSize = fontSize;
+            this.combine = combine;
+            this.centerCharacterOrigin = centerCharacterOrigin;
+            this.bezierAccuracy = bezierAccuracy;
+            this.opentypeOptions = opentypeOptions;
+            this.update();
+        }
+
+        async loadFont() {
+            if (!this.fontPromise) {
+                const ttfUrl = makerjs.fontmanager.getFontTtfUrl(this.fontFamily);
+                this.fontPromise = new Promise((resolve, reject) => {
+                    opentype.load(ttfUrl, (err, font) => {
+                        if (err) reject(err);
+                        else resolve(font);
+                    });
+                });
+            }
+            return this.fontPromise;
+        }
+
+        async update(text, fontSize) {
+            if (text !== undefined) this.currentText = text;
+            if (fontSize !== undefined) this.currentSize = fontSize;
+
+            try {
+                const textModel = new MakerJs.models.TextModel(
+                    this.fontFamily,
+                    this.currentText,
+                    this.currentSize,
+                    this.combine,
+                    this.centerCharacterOrigin,
+                    this.bezierAccuracy,
+                    this.opentypeOptions
+                );
+                this.models = textModel.models;
+            } catch (error) {
+                console.error('Error updating text model:', error);
+                throw error;
+            }
+        }
+    };
+
+    // Then define the Alpine.js component
     document.addEventListener('alpine:init', () => {
         Alpine.data('fontViewer', () => ({
-            fonts: [],
+            filteredFonts: [],
             selectedFont: '',
+            searchQuery: '',
             textContent: 'Hello World',
             fontSize: 72,
             error: '',
             loading: false,
-            currentFont: null,
+            textModel: null,
+            showDropdown: false,
+            currentPage: 1,
+            hasNextPage: true,
 
-            async init() {
-                try {
-                    // Get initial font list
-                    const result = await makerjs.fontmanager.listFonts(1);
-                    console.log('Font list result:', result);
-                    if (result && result.fonts) {
-                        this.fonts = result.fonts.map(font => font.family);
+            init() {
+                this.searchFonts();
+                
+                // Add click event listener to handle clicks outside
+                document.addEventListener('click', (e) => {
+                    const fontSelector = document.querySelector('.font-selector');
+                    if (!fontSelector.contains(e.target)) {
+                        this.showDropdown = false;
                     }
+                });
+            },
+
+            toggleDropdown() {
+                this.showDropdown = !this.showDropdown;
+            },
+
+            async searchFonts() {
+                try {
+                    this.currentPage = 1;
+                    this.loading = true;
+
+                    const result = makerjs.fontmanager.searchFonts(this.searchQuery, {
+                        page: this.currentPage,
+                        pageSize: 20,
+                        sortBy: 'popularity'
+                    });
+
+                    // Preload fonts
+                    for (const font of result.fonts) {
+                        const link = document.createElement('link');
+                        link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font.family)}`;
+                        link.rel = 'stylesheet';
+                        document.head.appendChild(link);
+                    }
+
+                    this.filteredFonts = result.fonts;
+                    this.hasNextPage = result.hasNextPage;
+                    this.showDropdown = true;
                 } catch (error) {
-                    console.error('Error loading font list:', error);
-                    this.error = 'Failed to load font list: ' + error.message;
+                    console.error('Error searching fonts:', error);
+                    this.error = 'Failed to search fonts: ' + error.message;
+                } finally {
+                    this.loading = false;
                 }
             },
 
-            async loadSelectedFont() {
-                if (!this.selectedFont) return;
+            async loadMore() {
+                if (!this.hasNextPage || this.loading) return;
+
+                try {
+                    this.loading = true;
+                    this.currentPage++;
+
+                    const result = makerjs.fontmanager.searchFonts(this.searchQuery, {
+                        page: this.currentPage,
+                        pageSize: 20,
+                        sortBy: 'popularity'
+                    });
+
+                    // Preload fonts for new results
+                    for (const font of result.fonts) {
+                        const link = document.createElement('link');
+                        link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font.family)}`;
+                        link.rel = 'stylesheet';
+                        document.head.appendChild(link);
+                    }
+
+                    this.filteredFonts = [...this.filteredFonts, ...result.fonts];
+                    this.hasNextPage = result.hasNextPage;
+                } catch (error) {
+                    console.error('Error loading more fonts:', error);
+                    this.currentPage--;
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            handleScroll(target) {
+                if (target.scrollHeight - target.scrollTop <= target.clientHeight + 100) {
+                    this.loadMore();
+                }
+            },
+
+            async selectFont(fontFamily) {
+                this.selectedFont = fontFamily;
+                this.searchQuery = '';
+                this.showDropdown = false;  // Close dropdown after selection
 
                 try {
                     this.loading = true;
                     this.error = '';
-                    console.log('Loading font:', this.selectedFont);
 
-                    // Get font details and URL
-                    const fontDetails = makerjs.fontmanager.getFontDetails(this.selectedFont);
-                    const ttfUrl = makerjs.fontmanager.getFontTtfUrl(this.selectedFont);
-                    console.log('Font URL:', ttfUrl);
+                    this.textModel = await makerjs.models.TextModel.create(
+                        fontFamily,
+                        this.textContent,
+                        Number(this.fontSize)
+                    );
 
-                    // Load the font using opentype.js
-                    this.currentFont = await new Promise((resolve, reject) => {
-                        opentype.load(ttfUrl, (err, font) => {
-                            if (err) {
-                                reject(err);
-                            } else {
-                                resolve(font);
-                            }
-                        });
-                    });
-
-                    await this.renderText();
+                    await this.renderTextModel();
                 } catch (error) {
                     console.error('Error loading font:', error);
                     this.error = 'Failed to load font: ' + error.message;
@@ -155,40 +379,56 @@
                 }
             },
 
-            async renderText() {
-                if (!this.currentFont || !this.textContent) return;
+            async updateText() {
+                if (!this.textModel) return;
 
                 try {
                     this.error = '';
+                    // Ensure fontSize is treated as a number
+                    const size = parseInt(this.fontSize, 10);
+                    console.log('Updating font size to:', size); // Debug log
+                    
+                    // Update the text model with new text and size
+                    await this.textModel.update(this.textContent, size);
+                    console.log('Text model updated'); // Debug log
+                    
+                    // Re-render the updated model
+                    await this.renderTextModel();
+                    console.log('Render complete'); // Debug log
+                } catch (error) {
+                    console.error('Error updating text:', error);
+                    this.error = 'Error updating text: ' + error.message;
+                }
+            },
 
-                    // Create text model
-                    const textModel = new makerjs.models.Text(
-                        this.currentFont,
-                        this.textContent,
-                        Number(this.fontSize)
-                    );
+            async renderTextModel() {
+                if (!this.textModel?.models) return;
 
-                    // Get model measurements
-                    const measurement = makerjs.measure.modelExtents(textModel);
+                try {
+                    // Ensure we're working with a valid model
+                    const measurement = makerjs.measure.modelExtents(this.textModel);
+                    if (!measurement) {
+                        console.warn('No measurement available');
+                        return;
+                    }
+
                     const width = measurement.high[0] - measurement.low[0];
                     const height = measurement.high[1] - measurement.low[1];
 
-                    // Generate SVG with proper viewBox
                     const svgOptions = {
                         svgAttrs: {
                             width: '100%',
                             height: '100%'
                         },
                         viewBox: true,
-                        origin: [-width/2, -height/2],  // Center the text
+                        origin: [-width/2, -height/2],
                         scale: 1,
                         stroke: '#000000',
                         strokeWidth: '1'
                     };
 
-                    const svg = makerjs.exporter.toSVG(textModel, svgOptions);
+                    const svg = makerjs.exporter.toSVG(this.textModel, svgOptions);
                     document.getElementById('svgOutput').innerHTML = svg;
-
                 } catch (error) {
                     console.error('Error rendering text:', error);
                     this.error = 'Error rendering text: ' + error.message;
