@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Font Viewer</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/bezier-js@2/bezier.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+    <script src="docs/target/js/browser.maker.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        .container {
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+        }
+        .controls {
+            flex: 1;
+            max-width: 300px;
+        }
+        .svg-section {
+            flex: 2;
+        }
+        select, input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .loading {
+            color: blue;
+            margin-top: 10px;
+        }
+        #svgOutput {
+            background: white;
+        }
+        #svgOutput svg {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="container" x-data="fontViewer">
+    <!-- Controls Section -->
+    <div class="controls">
+        <h2>Font Controls</h2>
+
+        <label for="fontSelect">Select Font:</label>
+        <select
+                id="fontSelect"
+                x-model="selectedFont"
+                @change="loadSelectedFont()"
+        >
+            <option value="">Choose a font...</option>
+            <template x-for="font in fonts" :key="font">
+                <option :value="font" x-text="font"></option>
+            </template>
+        </select>
+
+        <label for="textInput">Enter Text:</label>
+        <input
+                id="textInput"
+                type="text"
+                x-model="textContent"
+                placeholder="Enter text..."
+                @input="renderText()"
+        >
+
+        <label for="sizeInput">Font Size:</label>
+        <input
+                id="sizeInput"
+                type="number"
+                x-model="fontSize"
+                min="10"
+                max="200"
+                @input="renderText()"
+        >
+
+        <div x-show="loading" class="loading">Loading font...</div>
+        <div x-show="error" style="color: red; margin-top: 10px;" x-text="error"></div>
+    </div>
+
+    <!-- SVG Output Section -->
+    <div class="svg-section">
+        <h2>SVG Output</h2>
+        <div id="svgOutput" style="width: 600px; height: 600px; border: 1px solid #ccc;"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('fontViewer', () => ({
+            fonts: [],
+            selectedFont: '',
+            textContent: 'Hello World',
+            fontSize: 72,
+            error: '',
+            loading: false,
+            currentFont: null,
+
+            async init() {
+                try {
+                    // Get initial font list
+                    const result = await makerjs.fontmanager.listFonts(1);
+                    console.log('Font list result:', result);
+                    if (result && result.fonts) {
+                        this.fonts = result.fonts.map(font => font.family);
+                    }
+                } catch (error) {
+                    console.error('Error loading font list:', error);
+                    this.error = 'Failed to load font list: ' + error.message;
+                }
+            },
+
+            async loadSelectedFont() {
+                if (!this.selectedFont) return;
+
+                try {
+                    this.loading = true;
+                    this.error = '';
+                    console.log('Loading font:', this.selectedFont);
+
+                    // Get font details and URL
+                    const fontDetails = makerjs.fontmanager.getFontDetails(this.selectedFont);
+                    const ttfUrl = makerjs.fontmanager.getFontTtfUrl(this.selectedFont);
+                    console.log('Font URL:', ttfUrl);
+
+                    // Load the font using opentype.js
+                    this.currentFont = await new Promise((resolve, reject) => {
+                        opentype.load(ttfUrl, (err, font) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(font);
+                            }
+                        });
+                    });
+
+                    await this.renderText();
+                } catch (error) {
+                    console.error('Error loading font:', error);
+                    this.error = 'Failed to load font: ' + error.message;
+                    document.getElementById('svgOutput').innerHTML = '';
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async renderText() {
+                if (!this.currentFont || !this.textContent) return;
+
+                try {
+                    this.error = '';
+
+                    // Create text model
+                    const textModel = new makerjs.models.Text(
+                        this.currentFont,
+                        this.textContent,
+                        Number(this.fontSize)
+                    );
+
+                    // Get model measurements
+                    const measurement = makerjs.measure.modelExtents(textModel);
+                    const width = measurement.high[0] - measurement.low[0];
+                    const height = measurement.high[1] - measurement.low[1];
+
+                    // Generate SVG with proper viewBox
+                    const svgOptions = {
+                        svgAttrs: {
+                            width: '100%',
+                            height: '100%'
+                        },
+                        viewBox: true,
+                        origin: [-width/2, -height/2],  // Center the text
+                        scale: 1,
+                        stroke: '#000000',
+                        strokeWidth: '1'
+                    };
+
+                    const svg = makerjs.exporter.toSVG(textModel, svgOptions);
+                    document.getElementById('svgOutput').innerHTML = svg;
+
+                } catch (error) {
+                    console.error('Error rendering text:', error);
+                    this.error = 'Error rendering text: ' + error.message;
+                    document.getElementById('svgOutput').innerHTML = '';
+                }
+            }
+        }));
+    });
+</script>
+</body>
+</html>
