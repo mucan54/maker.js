@@ -200,62 +200,6 @@
 </div>
 
 <script>
-    // First, define the TextModel
-    if (!window.MakerJs) window.MakerJs = {};
-    if (!window.MakerJs.models) window.MakerJs.models = {};
-
-    MakerJs.models.TextModel = class TextModel {
-        models = {};
-        fontPromise = null;
-        currentText = '';
-        currentSize = 72;
-
-        constructor(fontFamily, text, fontSize, combine = false, centerCharacterOrigin = false, bezierAccuracy = undefined, opentypeOptions = undefined) {
-            this.fontFamily = fontFamily;
-            this.currentText = text;
-            this.currentSize = fontSize;
-            this.combine = combine;
-            this.centerCharacterOrigin = centerCharacterOrigin;
-            this.bezierAccuracy = bezierAccuracy;
-            this.opentypeOptions = opentypeOptions;
-            this.update();
-        }
-
-        async loadFont() {
-            if (!this.fontPromise) {
-                const ttfUrl = makerjs.fontmanager.getFontTtfUrl(this.fontFamily);
-                this.fontPromise = new Promise((resolve, reject) => {
-                    opentype.load(ttfUrl, (err, font) => {
-                        if (err) reject(err);
-                        else resolve(font);
-                    });
-                });
-            }
-            return this.fontPromise;
-        }
-
-        async update(text, fontSize) {
-            if (text !== undefined) this.currentText = text;
-            if (fontSize !== undefined) this.currentSize = fontSize;
-
-            try {
-                const textModel = new MakerJs.models.TextModel(
-                    this.fontFamily,
-                    this.currentText,
-                    this.currentSize,
-                    this.combine,
-                    this.centerCharacterOrigin,
-                    this.bezierAccuracy,
-                    this.opentypeOptions
-                );
-                this.models = textModel.models;
-            } catch (error) {
-                console.error('Error updating text model:', error);
-                throw error;
-            }
-        }
-    };
-
     // Then define the Alpine.js component
     document.addEventListener('alpine:init', () => {
         Alpine.data('fontViewer', () => ({
