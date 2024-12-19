@@ -32,6 +32,8 @@ namespace MakerJs.manager {
         "CustomDot"
     ];
 
+    const allValidShapes = allAvailableShapes.concat(["TextModel"]);
+
     const mainShapeRequiredModels = [
         "CornerDots",
         "EdgeDots",
@@ -61,7 +63,8 @@ namespace MakerJs.manager {
         SlopedRightRectangle: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
         Trapezoid: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
         Heart: ["GridDots", "RadialDots", "CustomDot"],
-        Kite: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"]
+        Kite: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
+        TextModel: ["GridDots", "RadialDots", "CustomDot"]
     };
 
     export var defaultFontSize = 10;
@@ -84,8 +87,26 @@ namespace MakerJs.manager {
         return shapes;
     }
 
+    export function getAllValidModels(): any {
+        const shapeNames = allValidShapes;
+        const shapes = {};
+
+        shapeNames.forEach(shapeName => {
+            // Convert shape name from CamelCase to spaced format
+            const formattedName = shapeName.replace(/([a-z])([A-Z])/g, '$1 $2');
+
+            shapes[shapeName] = {
+                code : shapeName,
+                name: formattedName, // Use the formatted name
+                parameters: MakerJs.models[shapeName]?.metaParameters || {} // Use optional chaining
+            };
+        });
+
+        return shapes;
+    }
+
     export function getModel(name: string, parameters: any[]): any {
-        const models = getAllModels();
+        const models = getAllValidModels();
         let modelDefinition = null;
         name = name.replace(/ /g, '');
 

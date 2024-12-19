@@ -239,7 +239,7 @@
                 this.showDropdown = !this.showDropdown;
             },
 
-            async searchFonts() {
+             searchFonts() {
                 try {
                     this.currentPage = 1;
                     this.loading = true;
@@ -269,7 +269,7 @@
                 }
             },
 
-            async loadMore() {
+             loadMore() {
                 if (!this.hasNextPage || this.loading) return;
 
                 try {
@@ -306,7 +306,7 @@
                 }
             },
 
-            async selectFont(fontFamily) {
+             selectFont(fontFamily) {
                 this.selectedFont = fontFamily;
                 this.searchQuery = '';
                 this.showDropdown = false;  // Close dropdown after selection
@@ -315,13 +315,21 @@
                     this.loading = true;
                     this.error = '';
 
-                    this.textModel = await makerjs.models.TextModel.create(
+                    this.textModel = new makerjs.models.TextModel(
                         fontFamily,
                         this.textContent,
                         Number(this.fontSize)
                     );
 
-                    await this.renderTextModel();
+                    console.log(makerjs.models.TextModel(
+                        fontFamily,
+                        this.textContent,
+                        Number(this.fontSize)
+                    ));
+
+                    console.log(this.textModel);
+
+                     this.renderTextModel();
                 } catch (error) {
                     console.error('Error loading font:', error);
                     this.error = 'Failed to load font: ' + error.message;
@@ -331,7 +339,7 @@
                 }
             },
 
-            async updateText() {
+             updateText() {
                 if (!this.textModel) return;
 
                 try {
@@ -339,10 +347,13 @@
                     const size = parseInt(this.fontSize, 10);
                     console.log('Updating font size to:', size);
                     
-                    await this.textModel.update(this.textContent, size);
+                     this.textModel = new makerjs.models.TextModel(
+                        this.selectedFont,
+                        this.textContent,
+                        size);
                     console.log('Text model updated');
                     
-                    await this.renderTextModel();
+                     this.renderTextModel();
                     console.log('Render complete');
                 } catch (error) {
                     console.error('Error updating text:', error);
@@ -350,7 +361,7 @@
                 }
             },
 
-            async renderTextModel() {
+             renderTextModel() {
                 if (!this.textModel?.models) return;
 
                 try {
@@ -375,6 +386,7 @@
                         strokeWidth: '1'
                     };
 
+                    console.log(this.textModel);
                     const svg = makerjs.exporter.toSVG(this.textModel, svgOptions);
                     document.getElementById('svgOutput').innerHTML = svg;
                 } catch (error) {
