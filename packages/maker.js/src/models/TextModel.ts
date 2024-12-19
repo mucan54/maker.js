@@ -166,4 +166,10 @@ namespace MakerJs.models {
             }
         }
     }
+
+    (<IKit>TextModel).metaParameters = [
+        { title: 'Font Family', type: 'text', unit: 'string', value: 'Arial' },
+        { title: 'Text', type: 'text', unit: 'string', value: '' },
+        { title: 'Font Size', type: 'range', unit: 'int', min: 1, max: 100, value: 10 },
+    ];
 }
