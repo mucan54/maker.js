@@ -114,8 +114,19 @@ namespace MakerJs.manager {
         if (models[name]) {
              if(typeof parameters === 'object'){
                 const parametersArray = [];
+                var index = 0;
                 for (const key in parameters) {
-                    parametersArray.push(parseFloat(parameters[key]?.value ?? parameters[key]));
+                    //get by index the parameter type
+                    const parameterType = models[name].parameters[index].unit ?? "float";
+                    if (parameterType === "int") {
+                        parametersArray.push(parseInt(parameters[key]?.value ?? parameters[key]));
+                    } else if(parameterType === "string") {
+                        parametersArray.push(parameters[key]?.value ?? parameters[key]);
+                    } else  {
+                        parametersArray.push(parseFloat(parameters[key]?.value ?? parameters[key]));
+                    }
+
+                    index++;
                 }
                 parameters = parametersArray;
              } else {
