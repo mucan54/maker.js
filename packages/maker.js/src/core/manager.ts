@@ -208,83 +208,151 @@ namespace MakerJs.manager {
         return shapesWithDot;
     }
 
-    export function calculateShapeTotalArea(mainShape: IModel, unit = null): any {
+    interface IModel {
+        models?: { [key: string]: IModel };
+        paths?: { [key: string]: any };
+        origin?: [number, number];
+        units?: string;
+    }
 
-        let cost = {};
-        let shapeWidth = MakerJs.measure.modelExtents(getMainModel()).high[0] - MakerJs.measure.modelExtents(getMainModel()).low[0];
-        let shapeHeight = MakerJs.measure.modelExtents(getMainModel()).high[1] - MakerJs.measure.modelExtents(getMainModel()).low[1];
+    export function calculateShapeTotalArea(mainShape: IModel, unit: string | null = null): any {
+        // Helper function to recursively extract all paths from models
+        function extractAllPaths(model: IModel): any[] {
+            let allPaths: any[] = [];
 
-        let allModels = extractModelsFromParentModelRecursive(mainShape);
+            // Base case: if model is null or undefined
+            if (!model) return allPaths;
 
+            // Process paths in current model
+            if (model.paths) {
+                for (const key in model.paths) {
+                    if (model.paths.hasOwnProperty(key)) {
+                        const path = model.paths[key];
+
+                        // Check if the path itself has models
+                        if (path.models) {
+                            allPaths = allPaths.concat(extractAllPaths(path));
+                        }
+
+                        allPaths.push(path);
+                    }
+                }
+            }
+
+            // Process paths in nested models
+            if (model.models) {
+                for (const key in model.models) {
+                    if (model.models.hasOwnProperty(key)) {
+                        const nestedModel = model.models[key];
+
+                        // Process paths in the nested model
+                        if (nestedModel.paths) {
+                            for (const pathKey in nestedModel.paths) {
+                                if (nestedModel.paths.hasOwnProperty(pathKey)) {
+                                    allPaths.push(nestedModel.paths[pathKey]);
+                                }
+                            }
+                        }
+
+                        // Recursively process any further nested models
+                        allPaths = allPaths.concat(extractAllPaths(nestedModel));
+                    }
+                }
+            }
+
+            return allPaths;
+        }
+
+        // Get model measurements
+        const modelExtents = MakerJs.measure.modelExtents(mainShape);
+        let shapeWidth = modelExtents.high[0] - modelExtents.low[0];
+        let shapeHeight = modelExtents.high[1] - modelExtents.low[1];
+
+        // Extract all paths
+        const allPaths = extractAllPaths(mainShape);
+
+        // Calculate total cut distance
         let totalCutDistance = 0;
+        let validDots: any[] = [];
 
-        let validDots = [];
-
-        allModels.forEach((model) => {
-            //check if the model.constructor.name contains "Dot"
-            if(!model.constructor.name.includes('Dot') && model.paths){
-                for(const key in model.paths){
-                    totalCutDistance += MakerJs.measure.pathLength(model.paths[key]);
-                }
+        for (let i = 0; i < allPaths.length; i++) {
+            const path = allPaths[i];
+            if (path.type === 'line' || path.type === 'arc' || path.type === 'BezierCurve') {
+                totalCutDistance += MakerJs.measure.pathLength(path);
+            } else if (path.constructor.name.includes('Dot')) {
+                validDots.push(path);
             }
-        });
+        }
 
-        allModels.forEach((model) => {
-            if(model.constructor.name.includes('Dot')){
-                for(const key in model.paths){
-                    validDots.push(model.paths[key]);
-                }
-            }
-        });
-
-        if(unit) {
-            const mainModelUnit = getMainModel().units ?? "cm";
+        // Apply unit conversion if needed
+        if (unit) {
+            const mainModelUnit = mainShape.units ?? "cm";
             const conversion = MakerJs.units.conversionScale(mainModelUnit, unit);
             shapeWidth *= conversion;
             shapeHeight *= conversion;
             totalCutDistance *= conversion;
         }
 
-
-        cost = {
-            mainFrame : {width: Math.round(shapeWidth), height: Math.round(shapeHeight)},
-            cutoutDistance: Math.round(totalCutDistance),
+        return {
+            mainFrame: {
+                width: Math.round(shapeWidth * 100) / 100,
+                height: Math.round(shapeHeight * 100) / 100
+            },
+            cutoutDistance: Math.round(totalCutDistance * 100) / 100,
             dots: validDots,
-            unit: unit ?? "cm"
-        }
-
-        return cost;
+            unit: unit ?? mainShape.units ?? "cm"
+        };
     }
 
-    function extractModelsFromParentModelRecursive(mainModel: IModel): any[] {
+    function extractModelsFromParentModelRecursive(mainModel: any): any[] {
         let models: any[] = [];
-        const ignore_keys = ['dimensions', 'frame'];
+        const ignoreKeys = ['dimensions', 'frame', 'bezierAccuracy', 'centerCharacterOrigin', 'combine', 'currentSize', 'currentText', 'font', 'fontFamily', 'opentypeOptions', 'units'];
+
+        // Helper function to check if an object is a TextModel
+        const isTextModel = (obj: any): boolean => {
+            return obj && obj.hasOwnProperty('currentText') && obj.hasOwnProperty('font') && obj.hasOwnProperty('models');
+        };
 
         // Iterate through all properties of the main model
         for (const key in mainModel) {
-            if(ignore_keys.includes(key)){
+            if (ignoreKeys.includes(key)) {
                 continue;
             }
 
             if (mainModel.hasOwnProperty(key)) {
                 const element = mainModel[key];
 
-                //  element.frame.constructor.name check if the name is in allAvailableShapes
-                if (allAvailableShapes.includes(element.constructor.name)) {
-                    // If the element is a model, add it to the list
+                if (!element) {
+                    continue;
+                }
+
+                if (isTextModel(element)) {
+                    // If the element is a TextModel, add it directly
                     models.push(element);
 
-                    // If the model contains child models, extract recursively
+                    // Check for child models inside the TextModel
+                    if (element.models) {
+                        for (const childKey in element.models) {
+                            if (element.models.hasOwnProperty(childKey)) {
+                                models.push(...extractModelsFromParentModelRecursive(element.models[childKey]));
+                            }
+                        }
+                    }
+                } else if (allValidShapes.includes(element.constructor?.name)) {
+                    // If the element is another valid model, add it
+                    models.push(element);
+
+                    // Recursively extract child models
                     if (element.models) {
                         models.push(...extractModelsFromParentModelRecursive(element.models));
                     }
                 } else if (Array.isArray(element)) {
-                    // If the element is an array, recursively extract models from it
+                    // Handle arrays
                     element.forEach((item) => {
                         models.push(...extractModelsFromParentModelRecursive(item));
                     });
                 } else if (typeof element === 'object') {
-                    // Recursively extract models from nested objects (non-array objects)
+                    // Handle nested objects
                     models.push(...extractModelsFromParentModelRecursive(element));
                 }
             }

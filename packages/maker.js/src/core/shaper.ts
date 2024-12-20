@@ -5,6 +5,10 @@ namespace MakerJs.shaper {
     function getParamsArray(parameters) {
         const parametersArray = [];
         for (const key in parameters) {
+            //check if type number
+            if (!isNaN(parameters[key]) && !isNaN(parseFloat(parameters[key]))) {
+                parameters[key] = parseFloat(parameters[key]);
+            }
             parametersArray.push(parameters[key]);
         }
 

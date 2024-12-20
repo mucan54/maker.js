@@ -35,7 +35,8 @@ namespace MakerJs.dimension {
     }
 
     // New function to format measurement text
-    function getMeasurementText(value: number): string {
+    function getMeasurementText(value: any): string {
+        value = parseFloat(value);
         const unit = MakerJs.manager.getMainModel().units ?? "cm";
         if (unit === 'inch') {
             return `${value.toFixed(0)} in`;
@@ -280,11 +281,11 @@ namespace MakerJs.dimension {
         );
 
         // Side length arrow (bottom center)
-        const midBottomX = (left + right) / 2 - (sideLength / 2);
+        const leftBottomX = (left + right) - sideLength;
         addArrowLine(
             model,
-            [midBottomX, bottom - ARROW_OFFSET],
-            [midBottomX + sideLength, bottom - ARROW_OFFSET],
+            [leftBottomX, bottom - ARROW_OFFSET],
+            [leftBottomX + 2 * sideLength, bottom - ARROW_OFFSET],
             `${getLabelText('length', customLangObj)} - ${getMeasurementText(sideLength)}`
         );
     }
@@ -367,12 +368,44 @@ namespace MakerJs.dimension {
         );
     }
 
+    function addSlopedLeftRectangleDimension(model: IModel, width: number, heightLeft: number, heightRight: number, customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const top = extents.high[1];
+        const bottom = extents.low[1];
+
+        // Width arrow (top)
+        addArrowLine(
+            model,
+            [left, top + ARROW_OFFSET],
+            [right, top + ARROW_OFFSET],
+            `${getLabelText('width', customLangObj)} - ${getMeasurementText(width)}`
+        );
+
+        // Left height arrow
+        addArrowLine(
+            model,
+            [left - ARROW_OFFSET, bottom],
+            [left - ARROW_OFFSET, bottom + heightLeft],
+            `${getLabelText('height', customLangObj)} - ${getMeasurementText(heightLeft)}`
+        );
+
+        // Right height arrow
+        addArrowLine(
+            model,
+            [right + ARROW_OFFSET, bottom],
+            [right + ARROW_OFFSET, bottom + heightRight],
+            `${getLabelText('height', customLangObj)} - ${getMeasurementText(heightRight)}`
+        );
+    }
+
     // Sloped Rectangle
     function addSlopedRectangleDimension(model: IModel, widthTop: number, widthBottom: number, height: number, customLangObj?: LanguageLabels) {
         const extents = MakerJs.measure.modelExtents(model);
         const leftBottom = extents.low[0];
         const rightBottom = leftBottom + widthBottom;
-        const leftTop = (extents.high[0] + extents.low[0] - widthTop) / 2;
+        const leftTop = extents.low[0];
         const rightTop = leftTop + widthTop;
         const bottom = extents.low[1];
         const top = extents.high[1];
@@ -393,11 +426,13 @@ namespace MakerJs.dimension {
             `${getLabelText('width', customLangObj)} - ${getMeasurementText(widthTop)}`
         );
 
+        const heightLocation = Math.max(rightBottom, rightTop) + ARROW_OFFSET;
+
         // Height
         addArrowLine(
             model,
-            [rightBottom + ARROW_OFFSET, bottom],
-            [rightBottom + ARROW_OFFSET, top],
+            [heightLocation, bottom],
+            [heightLocation, top],
             `${getLabelText('height', customLangObj)} - ${getMeasurementText(height)}`
         );
     }
@@ -456,6 +491,30 @@ namespace MakerJs.dimension {
             [right + ARROW_OFFSET, bottom],
             [right + ARROW_OFFSET, top],
             `${getLabelText('height', customLangObj)} - ${getMeasurementText(totalHeight)}`
+        );
+    }
+
+    function addGeneralDimension(model: IModel, metaParamValues: number[], customLangObj?: LanguageLabels) {
+        const extents = MakerJs.measure.modelExtents(model);
+        const left = extents.low[0];
+        const right = extents.high[0];
+        const top = extents.high[1];
+        const bottom = extents.low[1];
+        const totalLegth = right - left;
+        const totalWidth = top - bottom;
+
+        // Default to length and width
+        addArrowLine(
+            model,
+            [left, bottom - ARROW_OFFSET],
+            [right, bottom - ARROW_OFFSET],
+            `${getLabelText('length', customLangObj)} - ${getMeasurementText(totalLegth)}`
+        );
+        addArrowLine(
+            model,
+            [right + ARROW_OFFSET, bottom],
+            [right + ARROW_OFFSET, top],
+            `${getLabelText('width', customLangObj)} - ${getMeasurementText(totalWidth)}`
         );
     }
 
@@ -525,7 +584,7 @@ namespace MakerJs.dimension {
                 addStarDimension(model, metaParamValues[0], metaParamValues[1], customLangObj);
                 break;
             case 'slopedrectangle':
-                addSlopedRectangleDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
+                addSlopedLeftRectangleDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
                 break;
             case 'slopedrightrectangle':
                 addSlopedRightRectangleDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
@@ -540,7 +599,7 @@ namespace MakerJs.dimension {
                 addKiteDimension(model, metaParamValues[0], metaParamValues[1], metaParamValues[2], customLangObj);
                 break;
             default:
-                throw new Error(`Model type not recognized: ${modelName}`);
+                addGeneralDimension(model, metaParamValues, customLangObj);
         }
 
         return dimensionModels;
