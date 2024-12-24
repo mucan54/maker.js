@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DXF Viewer</title>
+
+    <!-- External Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bezier-js@2/bezier.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@0/dist/opentype.js"></script>
+    <script src="docs/target/js/browser.maker.js"></script>
+
+    <!-- Alpine Plugins -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine Core -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .controls {
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .svg-section {
+            flex: 2;
+        }
+
+        .file-upload {
+            width: 100%;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: #666;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        #svgOutput {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #svgOutput svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            color: #28a745;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .model-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .model-info h3 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container" x-data="dxfViewer" x-init="init()">
+    <!-- Controls Section -->
+    <div class="controls">
+        <h2>DXF Viewer</h2>
+
+        <div class="file-upload" @click="$refs.fileInput.click()">
+            <input
+                    type="file"
+                    x-ref="fileInput"
+                    @change="handleFileUpload"
+                    accept=".dxf"
+                    style="display: none;"
+            >
+            <p x-text="uploadText">Drop DXF file here or click to upload</p>
+        </div>
+
+        <div x-show="error" class="error" x-text="error"></div>
+        <div x-show="success" class="success" x-text="success"></div>
+
+        <div x-show="model" class="model-info">
+            <h3>Model Information</h3>
+            <p>Paths: <span x-text="Object.keys(model?.paths || {}).length"></span></p>
+            <p>Models: <span x-text="Object.keys(model?.models || {}).length"></span></p>
+            <p>Units: <span x-text="model?.units || 'Not specified'"></span></p>
+            <template x-if="model?.layers">
+                <div>
+                    <p>Layers:</p>
+                    <ul>
+                        <template x-for="(value, name) in model.layers" :key="name">
+                            <li x-text="name"></li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+            <div class="debug-info">
+                <small>Check browser console for detailed information</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- SVG Output Section -->
+    <div class="svg-section">
+        <h2>Preview</h2>
+        <div id="svgOutput" style="width: 600px; height: 600px;"></div>
+    </div>
+</div>
+
+<script>
+
+    class DxfToSvg {
+        constructor() {
+            this.entities = [];
+            this.bounds = {
+                minX: Infinity,
+                minY: Infinity,
+                maxX: -Infinity,
+                maxY: -Infinity
+            };
+        }
+
+        parseDxf(dxfContent) {
+            const lines = dxfContent.split('\n').map(line => line.trim());
+            let currentEntity = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const code = lines[i];
+                const value = lines[i + 1];
+
+                if (code === '0') {
+                    if (currentEntity) {
+                        this.entities.push(currentEntity);
+                    }
+
+                    switch (value) {
+                        case 'LINE':
+                            currentEntity = { type: 'LINE', x1: 0, y1: 0, x2: 0, y2: 0 };
+                            break;
+                        case 'CIRCLE':
+                            currentEntity = { type: 'CIRCLE', x: 0, y: 0, radius: 0 };
+                            break;
+                        case 'ARC':
+                            currentEntity = { type: 'ARC', x: 0, y: 0, radius: 0, startAngle: 0, endAngle: 0 };
+                            break;
+                        case 'LWPOLYLINE':
+                            currentEntity = { type: 'POLYLINE', points: [], closed: false };
+                            break;
+                        default:
+                            currentEntity = null;
+                    }
+                }
+
+                if (!currentEntity) {
+                    i++;
+                    continue;
+                }
+
+                switch (code) {
+                    case '10':
+                        if (currentEntity.type === 'LINE') currentEntity.x1 = parseFloat(value);
+                        else if (currentEntity.type === 'POLYLINE') currentEntity.points.push({ x: parseFloat(value) });
+                        else currentEntity.x = parseFloat(value);
+                        break;
+                    case '20':
+                        if (currentEntity.type === 'LINE') currentEntity.y1 = parseFloat(value);
+                        else if (currentEntity.type === 'POLYLINE' && currentEntity.points.length > 0) {
+                            currentEntity.points[currentEntity.points.length - 1].y = parseFloat(value);
+                        }
+                        else currentEntity.y = parseFloat(value);
+                        break;
+                    case '11':
+                        currentEntity.x2 = parseFloat(value);
+                        break;
+                    case '21':
+                        currentEntity.y2 = parseFloat(value);
+                        break;
+                    case '40':
+                        currentEntity.radius = parseFloat(value);
+                        break;
+                    case '50':
+                        currentEntity.startAngle = parseFloat(value);
+                        break;
+                    case '51':
+                        currentEntity.endAngle = parseFloat(value);
+                        break;
+                    case '70':
+                        if (currentEntity.type === 'POLYLINE') {
+                            currentEntity.closed = (parseInt(value) & 1) === 1;
+                        }
+                        break;
+                }
+
+                i++;
+            }
+
+            if (currentEntity) {
+                this.entities.push(currentEntity);
+            }
+
+            this.calculateBounds();
+            return this;
+        }
+
+        calculateBounds() {
+            this.entities.forEach(entity => {
+                switch (entity.type) {
+                    case 'LINE':
+                        this.updateBounds(entity.x1, entity.y1);
+                        this.updateBounds(entity.x2, entity.y2);
+                        break;
+                    case 'CIRCLE':
+                    case 'ARC':
+                        this.updateBounds(entity.x - entity.radius, entity.y - entity.radius);
+                        this.updateBounds(entity.x + entity.radius, entity.y + entity.radius);
+                        break;
+                    case 'POLYLINE':
+                        entity.points.forEach(point => {
+                            this.updateBounds(point.x, point.y);
+                        });
+                        break;
+                }
+            });
+        }
+
+        updateBounds(x, y) {
+            this.bounds.minX = Math.min(this.bounds.minX, x);
+            this.bounds.minY = Math.min(this.bounds.minY, y);
+            this.bounds.maxX = Math.max(this.bounds.maxX, x);
+            this.bounds.maxY = Math.max(this.bounds.maxY, y);
+        }
+
+        toSvgPath() {
+            const width = this.bounds.maxX - this.bounds.minX;
+            const height = this.bounds.maxY - this.bounds.minY;
+            const paths = [];
+
+            this.entities.forEach(entity => {
+                switch (entity.type) {
+                    case 'LINE':
+                        paths.push(`M ${entity.x1 - this.bounds.minX} ${height - (entity.y1 - this.bounds.minY)} L ${entity.x2 - this.bounds.minX} ${height - (entity.y2 - this.bounds.minY)}`);
+                        break;
+
+                    case 'CIRCLE':
+                        const cx = entity.x - this.bounds.minX;
+                        const cy = height - (entity.y - this.bounds.minY);
+                        paths.push(`M ${cx - entity.radius} ${cy} A ${entity.radius} ${entity.radius} 0 1 0 ${cx + entity.radius} ${cy} A ${entity.radius} ${entity.radius} 0 1 0 ${cx - entity.radius} ${cy}`);
+                        break;
+
+                    case 'ARC':
+                        const arcX = entity.x - this.bounds.minX;
+                        const arcY = height - (entity.y - this.bounds.minY);
+                        const startAngle = entity.startAngle * Math.PI / 180;
+                        const endAngle = entity.endAngle * Math.PI / 180;
+
+                        const x1 = arcX + entity.radius * Math.cos(startAngle);
+                        const y1 = arcY - entity.radius * Math.sin(startAngle);
+                        const x2 = arcX + entity.radius * Math.cos(endAngle);
+                        const y2 = arcY - entity.radius * Math.sin(endAngle);
+
+                        const largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+                        const sweepFlag = endAngle > startAngle ? 1 : 0;
+
+                        paths.push(`M ${x1} ${y1} A ${entity.radius} ${entity.radius} 0 ${largeArcFlag} ${sweepFlag} ${x2} ${y2}`);
+                        break;
+
+                    case 'POLYLINE':
+                        if (entity.points.length > 0) {
+                            const pathCommands = [];
+                            pathCommands.push(`M ${entity.points[0].x - this.bounds.minX} ${height - (entity.points[0].y - this.bounds.minY)}`);
+
+                            for (let i = 1; i < entity.points.length; i++) {
+                                pathCommands.push(`L ${entity.points[i].x - this.bounds.minX} ${height - (entity.points[i].y - this.bounds.minY)}`);
+                            }
+
+                            if (entity.closed) {
+                                pathCommands.push('Z');
+                            }
+
+                            paths.push(pathCommands.join(' '));
+                        }
+                        break;
+                }
+            });
+
+            return {
+                paths: paths.join(' '),
+                width,
+                height,
+                viewBox: `0 0 ${width} ${height}`
+            };
+        }
+    }
+
+    function dxfViewer() {
+        return {
+            model: null,
+            error: '',
+            success: '',
+            uploadText: 'Drop DXF file here or click to upload',
+
+            init() {
+                if (typeof makerjs === 'undefined') {
+                    console.error('Maker.js is not loaded');
+                    this.error = 'Required libraries not loaded';
+                    return;
+                }
+
+                // Setup drag and drop
+                const dropZone = document.querySelector('.file-upload');
+
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.uploadText = 'Release to upload';
+                });
+
+                dropZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.uploadText = 'Drop DXF file here or click to upload';
+                });
+
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.uploadText = 'Drop DXF file here or click to upload';
+
+                    const files = e.dataTransfer.files;
+                    if (files.length) {
+                        this.processDxfFile(files[0]);
+                    }
+                });
+            },
+
+            async handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    await this.processDxfFile(file);
+                }
+            },
+
+            async processDxfFile(file) {
+                if (!file.name.toLowerCase().endsWith('.dxf')) {
+                    this.error = 'Please upload a DXF file';
+                    return;
+                }
+
+                try {
+                    this.error = '';
+                    this.success = 'Loading DXF file...';
+
+                    const content = await file.text();
+                    console.log('DXF content:', content.substring(0, 200) + '...'); // Log first 200 chars
+
+                    const options = {
+                        strictUnits: false, // Allow unknown units
+                        layerOptions: true  // Include layer information
+                    };
+
+                    const dxfConverter = new DxfToSvg();
+                    this.model = dxfConverter.parseDxf(content).toSvgPath();
+                    console.log('Raw imported model:', this.model);
+
+                    // Validate model structure
+                    if (!this.model) {
+                        throw new Error('No model was created from DXF');
+                    }
+
+                    // Initialize if missing
+                    this.model.paths = this.model.paths || {};
+                    this.model.models = this.model.models || {};
+                    this.model.units = this.model.units || 'mm';
+
+                    // Log detailed model structure
+                    console.log('Model structure:', {
+                        pathCount: Object.keys(this.model.paths).length,
+                        modelCount: Object.keys(this.model.models).length,
+                        units: this.model.units,
+                        layers: this.model.layers
+                    });
+
+                    if (Object.keys(this.model.paths).length === 0 && Object.keys(this.model.models).length === 0) {
+                        this.success = 'DXF loaded but no geometry found. Check console for details.';
+                    } else {
+                        this.success = 'DXF file loaded successfully!';
+                    }
+
+                    this.renderModel();
+                } catch (error) {
+                    console.error('Error processing DXF:', error);
+                    this.error = 'Failed to process DXF file: ' + error.message;
+                    this.success = '';
+                }
+            },
+
+            renderModel() {
+                if (!this.model) return;
+
+                try {
+                    const measurement = makerjs.measure.modelExtents(this.model);
+                    if (!measurement) {
+                        console.warn('No measurement available');
+                        return;
+                    }
+
+                    const width = measurement.high[0] - measurement.low[0];
+                    const height = measurement.high[1] - measurement.low[1];
+
+                    const svgOptions = {
+                        svgAttrs: {
+                            width: '100%',
+                            height: '100%'
+                        },
+                        viewBox: true,
+                        origin: [-width/2, -height/2],
+                        scale: 1,
+                        stroke: '#000000',
+                        strokeWidth: '1'
+                    };
+
+                    this.model = makerjs.importer.fromSVGPathData(this.model.paths)
+                    console.log(this.model)
+                    const svg = makerjs.exporter.toSVG(this.model, svgOptions);
+                    document.getElementById('svgOutput').innerHTML = svg;
+                } catch (error) {
+                    console.error('Error rendering model:', error);
+                    this.error = 'Error rendering model: ' + error.message;
+                    document.getElementById('svgOutput').innerHTML = '';
+                }
+            }
+        };
+    }
+</script>
+</body>
+</html>
