@@ -5,6 +5,7 @@
     "sourceMap": true,
     "types": [
         "dxf-parser-typings/dxf-parser",
+        "dxf-parser",
       "@danmarshall/jscad-typings",
       "bezier-js",
       "graham_scan",

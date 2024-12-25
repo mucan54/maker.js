@@ -158,183 +158,169 @@
     class DxfToSvg {
         constructor() {
             this.entities = [];
-            this.bounds = {
-                minX: Infinity,
-                minY: Infinity,
-                maxX: -Infinity,
-                maxY: -Infinity
-            };
+            this.debug = true;
         }
 
-        parseDxf(dxfContent) {
-            const lines = dxfContent.split('\n').map(line => line.trim());
+        parseDxf(content) {
+            if (!content) {
+                console.log('Error: Empty DXF content');
+                return this;
+            }
+
+            const lines = content.split(/\r\n|\n/).map(line => line.trim());
+            console.log(`Total lines in DXF: ${lines.length}`);
+
             let currentEntity = null;
+            let inEntities = false;
+            let entityCount = 0;
 
             for (let i = 0; i < lines.length; i++) {
                 const code = lines[i];
                 const value = lines[i + 1];
 
-                if (code === '0') {
-                    if (currentEntity) {
-                        this.entities.push(currentEntity);
-                    }
-
-                    switch (value) {
-                        case 'LINE':
-                            currentEntity = { type: 'LINE', x1: 0, y1: 0, x2: 0, y2: 0 };
-                            break;
-                        case 'CIRCLE':
-                            currentEntity = { type: 'CIRCLE', x: 0, y: 0, radius: 0 };
-                            break;
-                        case 'ARC':
-                            currentEntity = { type: 'ARC', x: 0, y: 0, radius: 0, startAngle: 0, endAngle: 0 };
-                            break;
-                        case 'LWPOLYLINE':
-                            currentEntity = { type: 'POLYLINE', points: [], closed: false };
-                            break;
-                        default:
-                            currentEntity = null;
-                    }
+                // Log section changes
+                if (code === '0' && value === 'SECTION') {
+                    const sectionType = lines[i + 3];
+                    console.log(`Found section: ${sectionType}`);
                 }
 
-                if (!currentEntity) {
+                // Track ENTITIES section
+                if (code === '2' && value === 'ENTITIES') {
+                    console.log('Entering ENTITIES section');
+                    inEntities = true;
+                }
+
+                if (!inEntities) {
                     i++;
                     continue;
                 }
 
-                switch (code) {
-                    case '10':
-                        if (currentEntity.type === 'LINE') currentEntity.x1 = parseFloat(value);
-                        else if (currentEntity.type === 'POLYLINE') currentEntity.points.push({ x: parseFloat(value) });
-                        else currentEntity.x = parseFloat(value);
-                        break;
-                    case '20':
-                        if (currentEntity.type === 'LINE') currentEntity.y1 = parseFloat(value);
-                        else if (currentEntity.type === 'POLYLINE' && currentEntity.points.length > 0) {
-                            currentEntity.points[currentEntity.points.length - 1].y = parseFloat(value);
+                // Start new entity
+                if (code === '0') {
+                    // Save previous entity if exists
+                    if (currentEntity && Object.keys(currentEntity).length > 1) {
+                        console.log('Saving entity:', currentEntity);
+                        this.entities.push(currentEntity);
+                        entityCount++;
+                    }
+
+                    // Create new entity based on type
+                    if (['LINE', 'CIRCLE', 'ARC'].includes(value)) {
+                        console.log(`Found entity type: ${value}`);
+                        switch (value) {
+                            case 'LINE':
+                                currentEntity = { type: 'LINE', x1: 0, y1: 0, x2: 0, y2: 0 };
+                                break;
+                            case 'CIRCLE':
+                                currentEntity = { type: 'CIRCLE', x: 0, y: 0, radius: 0 };
+                                break;
+                            case 'ARC':
+                                currentEntity = { type: 'ARC', x: 0, y: 0, radius: 0, startAngle: 0, endAngle: 0 };
+                                break;
                         }
-                        else currentEntity.y = parseFloat(value);
-                        break;
-                    case '11':
-                        currentEntity.x2 = parseFloat(value);
-                        break;
-                    case '21':
-                        currentEntity.y2 = parseFloat(value);
-                        break;
-                    case '40':
-                        currentEntity.radius = parseFloat(value);
-                        break;
-                    case '50':
-                        currentEntity.startAngle = parseFloat(value);
-                        break;
-                    case '51':
-                        currentEntity.endAngle = parseFloat(value);
-                        break;
-                    case '70':
-                        if (currentEntity.type === 'POLYLINE') {
-                            currentEntity.closed = (parseInt(value) & 1) === 1;
-                        }
-                        break;
+                    } else {
+                        currentEntity = null;
+                    }
                 }
 
+                // Parse entity data if we have a current entity
+                if (currentEntity) {
+                    switch (code) {
+                        case '10': // X coordinate
+                            if (currentEntity.type === 'LINE') {
+                                currentEntity.x1 = parseFloat(value);
+                                console.log(`Set LINE x1: ${value}`);
+                            } else {
+                                currentEntity.x = parseFloat(value);
+                                console.log(`Set ${currentEntity.type} x: ${value}`);
+                            }
+                            break;
+                        case '20': // Y coordinate
+                            if (currentEntity.type === 'LINE') {
+                                currentEntity.y1 = parseFloat(value);
+                                console.log(`Set LINE y1: ${value}`);
+                            } else {
+                                currentEntity.y = parseFloat(value);
+                                console.log(`Set ${currentEntity.type} y: ${value}`);
+                            }
+                            break;
+                        case '11': // End X coordinate
+                            currentEntity.x2 = parseFloat(value);
+                            console.log(`Set LINE x2: ${value}`);
+                            break;
+                        case '21': // End Y coordinate
+                            currentEntity.y2 = parseFloat(value);
+                            console.log(`Set LINE y2: ${value}`);
+                            break;
+                        case '40': // Radius
+                            currentEntity.radius = parseFloat(value);
+                            console.log(`Set radius: ${value}`);
+                            break;
+                        case '50': // Start angle
+                            currentEntity.startAngle = parseFloat(value);
+                            console.log(`Set start angle: ${value}`);
+                            break;
+                        case '51': // End angle
+                            currentEntity.endAngle = parseFloat(value);
+                            console.log(`Set end angle: ${value}`);
+                            break;
+                    }
+                }
+
+                // Move to next group code
                 i++;
             }
 
-            if (currentEntity) {
+            // Add final entity if exists
+            if (currentEntity && Object.keys(currentEntity).length > 1) {
+                console.log('Saving final entity:', currentEntity);
                 this.entities.push(currentEntity);
+                entityCount++;
             }
 
-            this.calculateBounds();
+            console.log(`Parsed ${entityCount} entities`);
             return this;
         }
 
-        calculateBounds() {
-            this.entities.forEach(entity => {
-                switch (entity.type) {
-                    case 'LINE':
-                        this.updateBounds(entity.x1, entity.y1);
-                        this.updateBounds(entity.x2, entity.y2);
-                        break;
-                    case 'CIRCLE':
-                    case 'ARC':
-                        this.updateBounds(entity.x - entity.radius, entity.y - entity.radius);
-                        this.updateBounds(entity.x + entity.radius, entity.y + entity.radius);
-                        break;
-                    case 'POLYLINE':
-                        entity.points.forEach(point => {
-                            this.updateBounds(point.x, point.y);
-                        });
-                        break;
-                }
-            });
-        }
-
-        updateBounds(x, y) {
-            this.bounds.minX = Math.min(this.bounds.minX, x);
-            this.bounds.minY = Math.min(this.bounds.minY, y);
-            this.bounds.maxX = Math.max(this.bounds.maxX, x);
-            this.bounds.maxY = Math.max(this.bounds.maxY, y);
-        }
-
-        toSvgPath() {
-            const width = this.bounds.maxX - this.bounds.minX;
-            const height = this.bounds.maxY - this.bounds.minY;
+        getPathData() {
+            console.log(`Converting ${this.entities.length} entities to paths`);
             const paths = [];
 
-            this.entities.forEach(entity => {
+            this.entities.forEach((entity, index) => {
+                let path = '';
                 switch (entity.type) {
                     case 'LINE':
-                        paths.push(`M ${entity.x1 - this.bounds.minX} ${height - (entity.y1 - this.bounds.minY)} L ${entity.x2 - this.bounds.minX} ${height - (entity.y2 - this.bounds.minY)}`);
+                        path = `M ${entity.x1} ${-entity.y1} L ${entity.x2} ${-entity.y2}`;
                         break;
 
                     case 'CIRCLE':
-                        const cx = entity.x - this.bounds.minX;
-                        const cy = height - (entity.y - this.bounds.minY);
-                        paths.push(`M ${cx - entity.radius} ${cy} A ${entity.radius} ${entity.radius} 0 1 0 ${cx + entity.radius} ${cy} A ${entity.radius} ${entity.radius} 0 1 0 ${cx - entity.radius} ${cy}`);
+                        const r = entity.radius;
+                        path = `M ${entity.x - r} ${-entity.y} ` +
+                            `a ${r} ${r} 0 1 0 ${r * 2} 0 ` +
+                            `a ${r} ${r} 0 1 0 ${-r * 2} 0`;
                         break;
 
                     case 'ARC':
-                        const arcX = entity.x - this.bounds.minX;
-                        const arcY = height - (entity.y - this.bounds.minY);
                         const startAngle = entity.startAngle * Math.PI / 180;
                         const endAngle = entity.endAngle * Math.PI / 180;
 
-                        const x1 = arcX + entity.radius * Math.cos(startAngle);
-                        const y1 = arcY - entity.radius * Math.sin(startAngle);
-                        const x2 = arcX + entity.radius * Math.cos(endAngle);
-                        const y2 = arcY - entity.radius * Math.sin(endAngle);
+                        const x1 = entity.x + entity.radius * Math.cos(startAngle);
+                        const y1 = -(entity.y + entity.radius * Math.sin(startAngle));
+                        const x2 = entity.x + entity.radius * Math.cos(endAngle);
+                        const y2 = -(entity.y + entity.radius * Math.sin(endAngle));
 
-                        const largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
-                        const sweepFlag = endAngle > startAngle ? 1 : 0;
+                        const isLargeArc = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+                        const sweepFlag = entity.startAngle > entity.endAngle ? 0 : 1;
 
-                        paths.push(`M ${x1} ${y1} A ${entity.radius} ${entity.radius} 0 ${largeArcFlag} ${sweepFlag} ${x2} ${y2}`);
-                        break;
-
-                    case 'POLYLINE':
-                        if (entity.points.length > 0) {
-                            const pathCommands = [];
-                            pathCommands.push(`M ${entity.points[0].x - this.bounds.minX} ${height - (entity.points[0].y - this.bounds.minY)}`);
-
-                            for (let i = 1; i < entity.points.length; i++) {
-                                pathCommands.push(`L ${entity.points[i].x - this.bounds.minX} ${height - (entity.points[i].y - this.bounds.minY)}`);
-                            }
-
-                            if (entity.closed) {
-                                pathCommands.push('Z');
-                            }
-
-                            paths.push(pathCommands.join(' '));
-                        }
+                        path = `M ${x1} ${y1} A ${entity.radius} ${entity.radius} 0 ${isLargeArc} ${sweepFlag} ${x2} ${y2}`;
                         break;
                 }
+                console.log(`Generated path for ${entity.type}:`, path);
+                paths.push(path);
             });
 
-            return {
-                paths: paths.join(' '),
-                width,
-                height,
-                viewBox: `0 0 ${width} ${height}`
-            };
+            console.log(`Generated ${paths.length} paths`);
+            return paths;
         }
     }
 
@@ -405,7 +391,7 @@
                     };
 
                     const dxfConverter = new DxfToSvg();
-                    this.model = dxfConverter.parseDxf(content).toSvgPath();
+                    this.model = makerjs.importer.fromDXF(content)
                     console.log('Raw imported model:', this.model);
 
                     // Validate model structure
@@ -426,11 +412,7 @@
                         layers: this.model.layers
                     });
 
-                    if (Object.keys(this.model.paths).length === 0 && Object.keys(this.model.models).length === 0) {
-                        this.success = 'DXF loaded but no geometry found. Check console for details.';
-                    } else {
-                        this.success = 'DXF file loaded successfully!';
-                    }
+                    this.success = 'DXF file loaded successfully!';
 
                     this.renderModel();
                 } catch (error) {
@@ -444,30 +426,7 @@
                 if (!this.model) return;
 
                 try {
-                    const measurement = makerjs.measure.modelExtents(this.model);
-                    if (!measurement) {
-                        console.warn('No measurement available');
-                        return;
-                    }
-
-                    const width = measurement.high[0] - measurement.low[0];
-                    const height = measurement.high[1] - measurement.low[1];
-
-                    const svgOptions = {
-                        svgAttrs: {
-                            width: '100%',
-                            height: '100%'
-                        },
-                        viewBox: true,
-                        origin: [-width/2, -height/2],
-                        scale: 1,
-                        stroke: '#000000',
-                        strokeWidth: '1'
-                    };
-
-                    this.model = makerjs.importer.fromSVGPathData(this.model.paths)
-                    console.log(this.model)
-                    const svg = makerjs.exporter.toSVG(this.model, svgOptions);
+                    const svg = makerjs.exporter.toSVG(this.model);
                     document.getElementById('svgOutput').innerHTML = svg;
                 } catch (error) {
                     console.error('Error rendering model:', error);
