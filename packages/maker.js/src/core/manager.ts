@@ -32,7 +32,7 @@ namespace MakerJs.manager {
         "CustomDot"
     ];
 
-    const allValidShapes = allAvailableShapes.concat(["TextModel"]);
+    const allValidShapes = allAvailableShapes.concat(["TextModel", "DxfModel"]);
 
     const mainShapeRequiredModels = [
         "CornerDots",

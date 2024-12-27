@@ -51,6 +51,7 @@
     "../src/core/shaper.ts",
     "../src/core/fontData.ts",
     "../src/core/fontmanager.ts",
+    "../src/core/shapeIcons.ts",
     "../src/models/BezierCurve.ts",
     "../src/models/Ellipse.ts",
     "../src/models/ConnectTheDots.ts",
@@ -103,5 +104,6 @@
     "../src/models/Grid.ts",
     "../src/models/Line.ts",
     "../src/models/TextModel.ts",
+    "../src/models/DxfModel.ts",
 ]
 }
