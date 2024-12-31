@@ -1,5 +1,21 @@
 ﻿namespace MakerJs.importer {
-    export function fromDXF(dxfContent: string): MakerJs.IModel {
+    // Define supported units and their conversion factors (to millimeters)
+    const unitConversions = {
+        'mm': 1,
+        'cm': 10,
+        'm': 1000,
+        'in': 25.4,
+        'ft': 304.8,
+    };
+
+    type UnitType = keyof typeof unitConversions;
+
+    export interface DXFImportOptions {
+        units?: UnitType;
+        targetUnits?: UnitType;
+    }
+
+    export function fromDXF(dxfContent: string, options: DXFImportOptions = {}): MakerJs.IModel {
         const dxfParser = require('dxf-parser');
         const parser = new dxfParser();
         const model: MakerJs.IModel = {paths: {}, models: {}};
@@ -7,6 +23,13 @@
         try {
             const dxf = parser.parseSync(dxfContent);
             if (!dxf?.entities) return model;
+
+            // Get units from DXF file or use provided units
+            const sourceUnits = determineSourceUnits(dxf, options.units || 'mm');
+            const targetUnits = options.targetUnits || sourceUnits;
+
+            // Calculate conversion factor
+            const conversionFactor = getConversionFactor(sourceUnits, targetUnits);
 
             // Process by layer to maintain order
             const layerGroups = new Map<string, any[]>();
@@ -20,9 +43,14 @@
 
             layerGroups.forEach((entities, layer) => {
                 const layerModel: MakerJs.IModel = {paths: {}, models: {}};
-                entities.forEach((entity: any) => addEntityToModel(layerModel, entity, layer));
+                entities.forEach((entity: any) =>
+                    addEntityToModel(layerModel, entity, layer, conversionFactor)
+                );
                 model.models![layer] = layerModel;
             });
+
+            // Add unit information to the model metadata
+            model.units = targetUnits;
 
             return model;
         } catch (error) {
@@ -31,16 +59,49 @@
         }
     }
 
-    function addEntityToModel(model: MakerJs.IModel, entity: any, layer: string): void {
+    function determineSourceUnits(dxf: any, defaultUnits: UnitType): UnitType {
+        // Try to get units from DXF header
+        if (dxf.header && dxf.header.$INSUNITS) {
+            // DXF unit codes to our unit types
+            const dxfUnitMap: { [key: number]: UnitType } = {
+                1: 'in',
+                2: 'ft',
+                4: 'mm',
+                5: 'cm',
+                6: 'm'
+            };
+            const dxfUnits = dxf.header.$INSUNITS;
+            if (dxfUnitMap[dxfUnits]) {
+                return dxfUnitMap[dxfUnits];
+            }
+        }
+        return defaultUnits;
+    }
+
+    function getConversionFactor(sourceUnits: UnitType, targetUnits: UnitType): number {
+        return unitConversions[sourceUnits] / unitConversions[targetUnits];
+    }
+
+    function addEntityToModel(
+        model: MakerJs.IModel,
+        entity: any,
+        layer: string,
+        conversionFactor: number
+    ): void {
         const id = `${layer}_${Date.now()}_${Math.random()}`;
+
+        // Convert coordinates based on unit conversion factor
+        function convertPoint(point: { x: number, y: number }): [number, number] {
+            return [point.x * conversionFactor, point.y * conversionFactor];
+        }
 
         switch (entity.type) {
             case 'LINE':
                 if (entity.vertices?.[0] && entity.vertices?.[1]) {
                     model.paths[`line_${id}`] = {
                         type: 'line',
-                        origin: [entity.vertices[0].x, entity.vertices[0].y],
-                        end: [entity.vertices[1].x, entity.vertices[1].y]
+                        origin: convertPoint(entity.vertices[0]),
+                        end: convertPoint(entity.vertices[1])
                     };
                 }
                 break;
@@ -49,8 +110,8 @@
                 if (entity.center && typeof entity.radius === 'number') {
                     model.paths[`arc_${id}`] = {
                         type: 'arc',
-                        origin: [entity.center.x, entity.center.y],
-                        radius: entity.radius,
+                        origin: convertPoint(entity.center),
+                        radius: entity.radius * conversionFactor,
                         startAngle: entity.startAngle * 180 / Math.PI,
                         endAngle: entity.endAngle * 180 / Math.PI
                     };
@@ -61,8 +122,8 @@
                 if (entity.center && typeof entity.radius === 'number') {
                     model.paths[`circle_${id}`] = {
                         type: 'circle',
-                        origin: [entity.center.x, entity.center.y],
-                        radius: entity.radius
+                        origin: convertPoint(entity.center),
+                        radius: entity.radius * conversionFactor
                     };
                 }
                 break;
@@ -76,12 +137,12 @@
                         const next = entity.vertices[i + 1];
 
                         if (current.bulge) {
-                            addBulgeArc(subModel, current, next, current.bulge, `${id}_${i}`);
+                            addBulgeArc(subModel, current, next, current.bulge, `${id}_${i}`, conversionFactor);
                         } else {
                             subModel.paths[`segment_${id}_${i}`] = {
                                 type: 'line',
-                                origin: [current.x, current.y],
-                                end: [next.x, next.y]
+                                origin: convertPoint(current),
+                                end: convertPoint(next)
                             };
                         }
                     }
@@ -91,8 +152,8 @@
                         const first = entity.vertices[0];
                         subModel.paths[`close_${id}`] = {
                             type: 'line',
-                            origin: [last.x, last.y],
-                            end: [first.x, first.y]
+                            origin: convertPoint(last),
+                            end: convertPoint(first)
                         };
                     }
 
@@ -103,25 +164,38 @@
             case 'SPLINE':
                 if (entity.controlPoints?.length > 0) {
                     const subModel: MakerJs.IModel = {paths: {}};
-                    addSpline(subModel, entity, id);
+                    addSpline(subModel, entity, id, conversionFactor);
                     chainAndMerge(model, subModel, id);
                 }
                 break;
         }
     }
 
-    function addBulgeArc(model: MakerJs.IModel, start: any, end: any, bulge: number, id: string): void {
-        const chord = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+    function addBulgeArc(
+        model: MakerJs.IModel,
+        start: any,
+        end: any,
+        bulge: number,
+        id: string,
+        conversionFactor: number
+    ): void {
+        const chord = Math.sqrt(
+            Math.pow((end.x - start.x) * conversionFactor, 2) +
+            Math.pow((end.y - start.y) * conversionFactor, 2)
+        );
         const sagitta = Math.abs(bulge) * chord / 2;
         const radius = (chord * chord / (4 * sagitta) + sagitta) / 2;
 
-        const chordAngle = Math.atan2(end.y - start.y, end.x - start.x);
+        const chordAngle = Math.atan2(
+            (end.y - start.y) * conversionFactor,
+            (end.x - start.x) * conversionFactor
+        );
         const bulgeAngle = Math.atan(bulge);
         const centerAngle = chordAngle + (Math.PI / 2 - bulgeAngle);
 
         const center = {
-            x: start.x + radius * Math.cos(centerAngle),
-            y: start.y + radius * Math.sin(centerAngle)
+            x: start.x * conversionFactor + radius * Math.cos(centerAngle),
+            y: start.y * conversionFactor + radius * Math.sin(centerAngle)
         };
 
         const startAngle = (chordAngle - Math.PI / 2 + bulgeAngle) * 180 / Math.PI;
@@ -136,16 +210,22 @@
         };
     }
 
-    function addSpline(model: MakerJs.IModel, entity: any, id: string): void {
-        const controlPoints = entity.controlPoints;
+    function addSpline(
+        model: MakerJs.IModel,
+        entity: any,
+        id: string,
+        conversionFactor: number
+    ): void {
+        const controlPoints = entity.controlPoints.map((pt: any) => ({
+            x: pt.x * conversionFactor,
+            y: pt.y * conversionFactor
+        }));
         const degree = entity.degree || 3;
         const isClosed = entity.closed;
         const knots = entity.knots || [];
 
-        // Calculate adaptive number of segments based on spline complexity
         const numSegments = Math.max((controlPoints.length - 1) * 20, 100);
 
-        // Generate points along the spline
         const points = [];
         for (let i = 0; i <= numSegments; i++) {
             const t = i / numSegments;
@@ -153,7 +233,6 @@
             points.push(point);
         }
 
-        // Create path segments
         for (let i = 0; i < points.length - 1; i++) {
             const current = points[i];
             const next = points[i + 1];
@@ -173,6 +252,7 @@
         }
     }
 
+    // Rest of the helper functions remain the same
     function evaluateSpline(controlPoints: any[], degree: number, knots: number[], t: number): any {
         const n = controlPoints.length - 1;
         let x = 0, y = 0;
