@@ -104,7 +104,7 @@ namespace MakerJs.shaper {
         return mainShape;
     }
 
-    export function finalizeShape(mainShapeData: any): any {
+    export function finalizeShape(mainShapeData: any, style: boolean = true): any {
         mainShapeData = JSON.parse(mainShapeData);
         let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters, mainShapeData.mainFrame.unitType ?? MAIN_SHAPE_DEFAULT_UNIT);
         if (!mainShape) return;
@@ -164,11 +164,17 @@ namespace MakerJs.shaper {
             MakerJs.model.center(mainShape);
             MakerJs.model.originate(mainShape);
 
-            return MakerJs.exporter.toSVG(mainShape, options);
+            let svgContent = MakerJs.exporter.toSVG(mainShape, options);
+
+            if(style) {
+                svgContent = styleSvg(svgContent);
+            }
+
+            return svgContent;
         }
     }
 
-    export function getFinalShapeOnly(mainShapeData: any): any {
+    export function getFinalShapeOnly(mainShapeData: any, style: boolean = true): any {
         mainShapeData = JSON.parse(mainShapeData);
         let mainShape = MakerJs.manager.fetchMainModel(mainShapeData.mainFrame.shapeType, mainShapeData.mainFrame.shapeParameters, mainShapeData.mainFrame.unitType ?? MAIN_SHAPE_DEFAULT_UNIT);
         if (!mainShape) return;
@@ -191,7 +197,13 @@ namespace MakerJs.shaper {
             MakerJs.model.center(mainShape);
             MakerJs.model.originate(mainShape);
 
-            return MakerJs.exporter.toSVG(mainShape, options);
+            let svgContent = MakerJs.exporter.toSVG(mainShape, options);
+
+            if(style) {
+                svgContent = styleSvg(svgContent);
+            }
+
+            return svgContent;
         }
     }
 
@@ -256,4 +268,31 @@ namespace MakerJs.shaper {
 
         return {x: positionX, y: positionY};
     }
+     function styleSvg(svgContent: string): string {
+         svgContent = svgContent.replace(
+             'id="gray"',
+             'id="gray" style="opacity: 0.3; stroke-width: 1px;"'
+         );
+
+         svgContent = svgContent.replace(
+             'id="dimension-text"',
+             'id="dimension-text" style="stroke: white; stroke-width: 15px;"'
+         );
+
+         svgContent = svgContent.replace(
+             'id="captions"',
+             'id="captions" style="fill: black; stroke: none !important;"'
+         );
+
+         //for each text element in the svg remove stroke and style attributes
+         const textElements = svgContent.match(/<text.*?<\/text>/g);
+         if (textElements) {
+             textElements.forEach(function(textElement) {
+                 //example content stroke=\"red\" style=\"stroke:red\"
+                 svgContent = svgContent.replace(textElement, textElement.replace(/stroke=\".*?\"/g, '').replace(/style=\".*?\"/g, ''));
+             });
+         }
+
+         return svgContent;
+     }
 }

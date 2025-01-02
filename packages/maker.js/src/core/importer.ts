@@ -26,7 +26,7 @@
 
             // Get units from DXF file or use provided units
             const sourceUnits = determineSourceUnits(dxf, options.units || 'mm');
-            const targetUnits = options.targetUnits || sourceUnits;
+            const targetUnits = options.targetUnits || 'cm';
 
             // Calculate conversion factor
             const conversionFactor = getConversionFactor(sourceUnits, targetUnits);
