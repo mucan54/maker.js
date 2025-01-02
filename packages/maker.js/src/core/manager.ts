@@ -64,7 +64,8 @@ namespace MakerJs.manager {
         Trapezoid: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
         Heart: ["GridDots", "RadialDots", "CustomDot"],
         Kite: ["CornerDots", "EdgeDots", "GridDots", "RadialDots", "CustomDot"],
-        TextModel: ["GridDots", "RadialDots", "CustomDot"]
+        TextModel: ["GridDots", "RadialDots", "CustomDot"],
+        DxfModel: ["GridDots", "RadialDots", "CustomDot"]
     };
 
     export var defaultFontSize = 10;
