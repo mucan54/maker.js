@@ -217,51 +217,42 @@ namespace MakerJs.manager {
     }
 
     export function calculateShapeTotalArea(mainShape: IModel, unit: string | null = null): any {
-        // Helper function to recursively extract all paths from models
-        function extractAllPaths(model: IModel): any[] {
-            let allPaths: any[] = [];
+        // Helper function to recursively extract models and their paths
+        function extractModelsAndPaths(model: IModel): { models: any[], paths: any[] } {
+            let result = {
+                models: [],
+                paths: []
+            };
 
             // Base case: if model is null or undefined
-            if (!model) return allPaths;
+            if (!model) return result;
+
+            // Add current model to the list
+            if (model.constructor?.name) {
+                result.models.push(model);
+            }
 
             // Process paths in current model
             if (model.paths) {
                 for (const key in model.paths) {
                     if (model.paths.hasOwnProperty(key)) {
-                        const path = model.paths[key];
-
-                        // Check if the path itself has models
-                        if (path.models) {
-                            allPaths = allPaths.concat(extractAllPaths(path));
-                        }
-
-                        allPaths.push(path);
+                        result.paths.push(model.paths[key]);
                     }
                 }
             }
 
-            // Process paths in nested models
+            // Process nested models
             if (model.models) {
                 for (const key in model.models) {
                     if (model.models.hasOwnProperty(key)) {
-                        const nestedModel = model.models[key];
-
-                        // Process paths in the nested model
-                        if (nestedModel.paths) {
-                            for (const pathKey in nestedModel.paths) {
-                                if (nestedModel.paths.hasOwnProperty(pathKey)) {
-                                    allPaths.push(nestedModel.paths[pathKey]);
-                                }
-                            }
-                        }
-
-                        // Recursively process any further nested models
-                        allPaths = allPaths.concat(extractAllPaths(nestedModel));
+                        const nestedResult = extractModelsAndPaths(model.models[key]);
+                        result.models = result.models.concat(nestedResult.models);
+                        result.paths = result.paths.concat(nestedResult.paths);
                     }
                 }
             }
 
-            return allPaths;
+            return result;
         }
 
         // Get model measurements
@@ -269,21 +260,30 @@ namespace MakerJs.manager {
         let shapeWidth = modelExtents.high[0] - modelExtents.low[0];
         let shapeHeight = modelExtents.high[1] - modelExtents.low[1];
 
-        // Extract all paths
-        const allPaths = extractAllPaths(mainShape);
+        // Extract all models and paths
+        const { models, paths } = extractModelsAndPaths(mainShape);
 
-        // Calculate total cut distance
+        // Calculate total cut distance and collect dots
         let totalCutDistance = 0;
         let validDots: any[] = [];
 
-        for (let i = 0; i < allPaths.length; i++) {
-            const path = allPaths[i];
-            if (path.type === 'line' || path.type === 'arc' || path.type === 'BezierCurve') {
-                totalCutDistance += MakerJs.measure.pathLength(path);
-            } else if (path.constructor.name.includes('Dot')) {
-                validDots.push(path);
+        // First, process models to find dots
+        models.forEach(model => {
+            if (model.constructor.name.includes('Dot')) {
+                for (const key in model.paths) {
+                    validDots.push(model.paths[key]);
+                }
             }
-        }
+        });
+
+        // Then process paths for cut distance
+        paths.forEach(path => {
+            if (!path.constructor.name.includes('Dot')) {
+                if (path.type === 'line' || path.type === 'arc' || path.type === 'BezierCurve') {
+                    totalCutDistance += MakerJs.measure.pathLength(path);
+                }
+            }
+        });
 
         // Apply unit conversion if needed
         if (unit) {
